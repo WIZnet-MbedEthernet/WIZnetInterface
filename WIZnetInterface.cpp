@@ -48,7 +48,6 @@ DHCPClient dhcp;
  * @retval
  */
 /* Interface implementation */
-//#if MBED_CONF_APP_NETWORK_INTERFACE == ETHERNET_TOE
 #if defined(TARGET_WIZwiki_W7500) || defined(TARGET_WIZwiki_W7500ECO) || defined(TARGET_WIZwiki_W7500P)
     NetworkInterface *NetworkInterface::get_default_instance()
     {
@@ -57,7 +56,8 @@ DHCPClient dhcp;
 #else
     NetworkInterface *NetworkInterface::get_default_instance()
     {
-        static WIZnetInterface eth(SPI_MOSI, SPI_MISO, SPI_SCK, SPI_CS, LED1);
+        //static WIZnetInterface eth(SPI_MOSI, SPI_MISO, SPI_SCK, SPI_CS, D15);
+        static WIZnetInterface eth(Wizchip_MOSI, Wizchip_MISO, Wizchip_SCK, Wizchip_CS, Wizchip_RESET);
         return &eth;
     }
 
@@ -70,7 +70,6 @@ DHCPClient dhcp;
         }
 
 #endif
-//#endif
 
 wiznet_socket* WIZnetInterface::get_sock(int fd)
 {

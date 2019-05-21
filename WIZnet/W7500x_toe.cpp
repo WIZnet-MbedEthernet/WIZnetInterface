@@ -200,17 +200,16 @@ void WIZnet_Chip::reset()
 
 #elif defined(TARGET_WIZwiki_W7500P)
 //초기화 추가
-    *(volatile uint32_t *)(0x41003088) = 0x62; //PC12
-    *(volatile uint32_t *)(0x41003054) = 0x62; //PC5
-    *(volatile uint32_t *)(0x41003058) = 0x62; //PC6
+    *(volatile uint32_t *)(0x41003070) = 0x61; //PB12
+    *(volatile uint32_t *)(0x41002054) = 0x01; //PB5 AFC_AFR_AF_0
+    *(volatile uint32_t *)(0x41003054) = 0x61; //PB5
+    *(volatile uint32_t *)(0x41002058) = 0x01; //PB6 AFC_AFR_AF_0
+    *(volatile uint32_t *)(0x41003058) = 0x61; //PB6
+    *(volatile uint32_t *)(0x410020D8) = 0x01; //PD6 AFC_AFR_AF_0
     *(volatile uint32_t *)(0x410030D8) = 0x02; //PD6
 
-    *(volatile uint32_t *)(0x41002054) = 0x01; //PC5 AFC_AFR_AF_0
-    *(volatile uint32_t *)(0x41002058) = 0x01; //PC6 AFC_AFR_AF_0
-    *(volatile uint32_t *)(0x410020D8) = 0x01; //PD6 AFC_AFR_AF_0
-
-    HAL_GPIO_SetBits(GPIOD, GPIO_Pin_6); // PHY reset pin
-    GPIOD->OUTENSET = GPIO_Pin_6; // PHY reset pin
+    *(volatile uint32_t *)(0x45000004) = 0x40; // PHY reset pin
+    *(volatile uint32_t *)(0x45000010) = 0x40; // PHY reset pin
 #endif
 
     // set ticker counter

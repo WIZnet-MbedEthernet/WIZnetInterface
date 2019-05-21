@@ -8,21 +8,43 @@
     #include "W7500x_toe.h"
 #else
 
-    #define USE_W5500  // don't use this library
-    //#define USE_W5100S // don't use this library
-    //#define USE_W6100  // don't use this library
-
-    #if defined(USE_W5500)
-    #include "W5500.h"
-    //#define USE_WIZ550IO_MAC    // want to use the default MAC address stored in the WIZ550io
+    #if MBED_CONF_APP_NETWORK_INTERFACE == ETHERNET_W5500
+        #define USE_W5500  // don't use this library
+        #include "W5500.h"
+    #elif MBED_CONF_APP_NETWORK_INTERFACE == ETHERNET_W6100
+        #define USE_W6100  // don't use this library
     #endif
+    //#define USE_W5100S // don't use this library
 
+    #if defined MBED_CONF_APP_WIZCHIP_SPI_MOSI
+        #define Wizchip_MOSI MBED_CONF_APP_WIZCHIP_SPI_MOSI
+    #else
+        #define Wizchip_MOSI SPI_MOSI
+    #endif
+    #if defined MBED_CONF_APP_WIZCHIP_MISO
+        #define Wizchip_MISO MBED_CONF_APP_WIZCHIP_SPI_MISO
+    #else
+        #define Wizchip_MISO SPI_MISO
+    #endif
+    #if defined MBED_CONF_APP_WIZCHIP_SCK
+        #define Wizchip_SCK MBED_CONF_APP_WIZCHIP_SPI_SCK
+    #else
+        #define Wizchip_SCK SPI_SCK
+    #endif
+    #if defined MBED_CONF_APP_WIZCHIP_CS
+        #define Wizchip_CS MBED_CONF_APP_WIZCHIP_SPI_CS
+    #else
+        #define Wizchip_CS SPI_CS
+    #endif
+    #if defined MBED_CONF_APP_WIZCHIP_RESET
+        #define Wizchip_RESET MBED_CONF_APP_WIZCHIP_SPI_RESET
+    #else
+        #define Wizchip_RESET D15
+    #endif
 #endif
 
 
 
-//#define ETHERNET          1
-//#define ETERNET_WIZTOE     2
 
 
 
