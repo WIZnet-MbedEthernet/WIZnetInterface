@@ -16,30 +16,30 @@
     #endif
     //#define USE_W5100S // don't use this library
 
-    #if defined MBED_CONF_APP_WIZCHIP_SPI_MOSI
-        #define Wizchip_MOSI MBED_CONF_APP_WIZCHIP_SPI_MOSI
+    #if defined MBED_CONF_WIZNET_MOSI
+        #define WIZNET_MOSI MBED_CONF_WIZNET_MOSI
     #else
-        #define Wizchip_MOSI SPI_MOSI
+        #define WIZNET_MOSI SPI_MOSI
     #endif
-    #if defined MBED_CONF_APP_WIZCHIP_MISO
-        #define Wizchip_MISO MBED_CONF_APP_WIZCHIP_SPI_MISO
+    #if defined MBED_CONF_WIZNET_MISO
+        #define WIZNET_MISO MBED_CONF_WIZNET_MISO
     #else
-        #define Wizchip_MISO SPI_MISO
+        #define WIZNET_MISO SPI_MISO
     #endif
-    #if defined MBED_CONF_APP_WIZCHIP_SCK
-        #define Wizchip_SCK MBED_CONF_APP_WIZCHIP_SPI_SCK
+    #if defined MBED_CONF_WIZNET_SCK
+        #define WIZNET_SCK MBED_CONF_WIZNET_SCK
     #else
-        #define Wizchip_SCK SPI_SCK
+        #define WIZNET_SCK SPI_SCK
     #endif
-    #if defined MBED_CONF_APP_WIZCHIP_CS
-        #define Wizchip_CS MBED_CONF_APP_WIZCHIP_SPI_CS
+    #if defined MBED_CONF_WIZNET_CS
+        #define WIZNET_CS MBED_CONF_WIZNET_CS
     #else
-        #define Wizchip_CS SPI_CS
+        #define WIZNET_CS SPI_CS
     #endif
-    #if defined MBED_CONF_APP_WIZCHIP_RESET
-        #define Wizchip_RESET MBED_CONF_APP_WIZCHIP_SPI_RESET
+    #if defined MBED_CONF_WIZNET_RESET
+        #define WIZNET_RESET MBED_CONF_WIZNET_RESET
     #else
-        #define Wizchip_RESET D15
+        #define WIZNET_RESET D15
     #endif
 #endif
 
