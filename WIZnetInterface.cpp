@@ -52,13 +52,14 @@ DHCPClient dhcp;
         WIZnetInterface eth;
     }
 #else
+#if defined MBED_CONF_WIZNET_INTERNAL_NETWORK
     NetworkInterface *NetworkInterface::get_default_instance()
     {
         //static WIZnetInterface eth(SPI_MOSI, SPI_MISO, SPI_SCK, SPI_CS, D15);
         static WIZnetInterface eth(WIZNET_MOSI, WIZNET_MISO, WIZNET_SCK, WIZNET_CS, WIZNET_RESET);
         return &eth;
     }
-
+#endif
     WIZnetInterface::WIZnetInterface(PinName mosi, PinName miso, PinName sclk, PinName cs, PinName reset) :
         _wiznet(mosi, miso, sclk, cs, reset)
         {
@@ -553,6 +554,10 @@ nsapi_size_or_error_t WIZnetInterface::socket_recv(nsapi_socket_t handle, void *
             return NSAPI_ERROR_WOULD_BLOCK;
         }
 
+        if(_size > size)
+        {
+            _size = size;
+        }
         retsize = _wiznet.recv(SKT(handle)->fd, (char*)((uint32_t *)data + recved_size), (int)_size);
 //	    printf("[TEST 400] : %d\r\n",recved_size);
 //	    for(idx=0; idx<16; idx++)
@@ -727,7 +732,7 @@ void WIZnetInterface::event()
 }
 
 nsapi_error_t WIZnetInterface::gethostbyname(const char *host,
-        SocketAddress *address, nsapi_version_t version)
+        SocketAddress *address, nsapi_version_t version, const char *interface_name)
 {
     DBG("DNS process %s \n", host);
     bool isOK = dns.lookup(host);

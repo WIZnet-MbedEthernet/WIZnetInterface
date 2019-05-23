@@ -32,7 +32,13 @@
         "socket-bufsize": {
             "help": "Max socket data heap usage",
             "value": 8192
+        },
+        "Internal-network": {
+            "help": "Internal network enable",
+            "options" : [null,1],
+            "value": null
         }
+
     },
     "target_overrides": {
     }

@@ -113,7 +113,7 @@ public:
      */
     //using NetworkInterface::gethostbyname;
     virtual nsapi_error_t gethostbyname(const char *host,
-            SocketAddress *address, nsapi_version_t version = NSAPI_UNSPEC);    
+            SocketAddress *address, nsapi_version_t version = NSAPI_UNSPEC, const char *interface_name = NULL);    
 
 	int IPrenew(int timeout_ms = 15*1000);
 	uint32_t str_to_ip(const char* str);
