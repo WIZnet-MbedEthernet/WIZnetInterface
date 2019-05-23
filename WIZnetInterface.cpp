@@ -52,7 +52,7 @@ DHCPClient dhcp;
         WIZnetInterface eth;
     }
 #else
-#if defined MBED_CONF_WIZNET_INTERNAL_NETWORK
+#if defined MBED_CONF_WIZNET_DEFAULT_NETWORK
     NetworkInterface *NetworkInterface::get_default_instance()
     {
         //static WIZnetInterface eth(SPI_MOSI, SPI_MISO, SPI_SCK, SPI_CS, D15);
