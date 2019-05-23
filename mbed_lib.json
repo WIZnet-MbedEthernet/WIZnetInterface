@@ -26,12 +26,17 @@
             "value": true
         },
         "provide-default": {
-            "help": "Provide default WifiInterface. [true/false]",
+            "help": "Provide default WizInterface. [true/false]",
             "value": false
         },
         "socket-bufsize": {
             "help": "Max socket data heap usage",
             "value": 8192
+        },
+        "default-network": {
+            "help": "Set the default network interface",
+            "options" : [true,false],
+            "value": false
         }
     },
     "target_overrides": {
