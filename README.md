@@ -7,38 +7,42 @@
 
 ```
 {
+    "name": "WIZNET",
     "config": {
-        "network-interface":{
-            "help": "options are ETHERNET, ETHERNET_W5500, ETHERNET_W6100",
-            "value": "ETHERNET_W5500"
-        },
-    "WIZchip-SPI-MOSI": {
-            "help": "Pin used as SPI MOSI (connects to WIZNET CHIP SPI MOSI)",
-            "value": "SPI_MOSI"
-        },
-    "WIZchip-SPI-MISO": {
-            "help": "Pin used as SPI MOSI (connects to WIZNET CHIP SPI MISO)",
-            "value": "SPI_MISO"
-        },
-    "WIZchip-SPI-SCK": {
-            "help": "Pin used as SPI MOSI (connects to WIZNET CHIP SPI SCK)",
+        "sck": {
+            "help": "sck pin for spi connection. defaults to SPI_SCK",
             "value": "SPI_SCK"
         },
-    "WIZchip-SPI-CS": {
-            "help": "Pin used as SPI MOSI (connects to WIZNET CHIP SPI CS)",
+        "cs": {
+            "help": "cs pin for spi connection. defaults to SPI_CS",
             "value": "SPI_CS"
         },
-    "WIZchip-SPI-RESET": {
-            "help": "Pin used as SPI MOSI (connects to WIZNET CHIP SPI RESET)",
+        "miso": {
+            "help": "miso pin for spi connection. defaults to SPI_MISO",
+            "value": "SPI_MISO"
+        },
+        "mosi": {
+            "help": "mosi pin for spi connection. defaults to SPI_MOSI",
+            "value": "SPI_MOSI"
+        },
+        "rst": {
+            "help": "RESET pin for spi connection. defaults to D15",
             "value": "D15"
+        },
+        "debug": {
+            "help": "Enable debug logs. [true/false]",
+            "value": true
+        },
+        "provide-default": {
+            "help": "Provide default WifiInterface. [true/false]",
+            "value": false
+        },
+        "socket-bufsize": {
+            "help": "Max socket data heap usage",
+            "value": 8192
         }
     },
     "target_overrides": {
-        "*": {
-            "platform.stdio-baud-rate": 115200,
-            "platform.stdio-convert-newlines": true,
-            "mbed-trace.enable": 0
-        }
     }
 }
 ```
