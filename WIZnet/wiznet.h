@@ -8,21 +8,43 @@
     #include "W7500x_toe.h"
 #else
 
-    #define USE_W5500  // don't use this library
-    //#define USE_W5100S // don't use this library
-    //#define USE_W6100  // don't use this library
-
-    #if defined(USE_W5500)
-    #include "W5500.h"
-    //#define USE_WIZ550IO_MAC    // want to use the default MAC address stored in the WIZ550io
+    #if MBED_CONF_APP_NETWORK_INTERFACE == ETHERNET_W5500
+        #define USE_W5500  // don't use this library
+        #include "W5500.h"
+    #elif MBED_CONF_APP_NETWORK_INTERFACE == ETHERNET_W6100
+        #define USE_W6100  // don't use this library
     #endif
+    //#define USE_W5100S // don't use this library
 
+    #if defined MBED_CONF_WIZNET_MOSI
+        #define WIZNET_MOSI MBED_CONF_WIZNET_MOSI
+    #else
+        #define WIZNET_MOSI SPI_MOSI
+    #endif
+    #if defined MBED_CONF_WIZNET_MISO
+        #define WIZNET_MISO MBED_CONF_WIZNET_MISO
+    #else
+        #define WIZNET_MISO SPI_MISO
+    #endif
+    #if defined MBED_CONF_WIZNET_SCK
+        #define WIZNET_SCK MBED_CONF_WIZNET_SCK
+    #else
+        #define WIZNET_SCK SPI_SCK
+    #endif
+    #if defined MBED_CONF_WIZNET_CS
+        #define WIZNET_CS MBED_CONF_WIZNET_CS
+    #else
+        #define WIZNET_CS SPI_CS
+    #endif
+    #if defined MBED_CONF_WIZNET_RESET
+        #define WIZNET_RESET MBED_CONF_WIZNET_RESET
+    #else
+        #define WIZNET_RESET D15
+    #endif
 #endif
 
 
 
-//#define ETHERNET          1
-//#define ETERNET_WIZTOE     2
 
 
 

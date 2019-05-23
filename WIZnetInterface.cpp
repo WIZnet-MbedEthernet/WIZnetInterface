@@ -29,9 +29,7 @@ static int udp_local_port = 0;
 #define WIZNET_WAIT_TIMEOUT1   1000
 #define WIZNET_ACCEPT_TIMEOUT 300000 //5 mins timeout, retrun NSAPI_ERROR_WOULD_BLOCK if there is no connection during 5 mins
 
-#define WIZNET_INTF_DBG 0
-
-#if WIZNET_INTF_DBG
+#if MBED_CONF_WIZNET_DEBUG
 #define DBG(...) do{debug("[%s:%d] \n", __PRETTY_FUNCTION__,__LINE__);debug(__VA_ARGS__);} while(0);
 #else
 #define DBG(...) while(0);
@@ -48,7 +46,6 @@ DHCPClient dhcp;
  * @retval
  */
 /* Interface implementation */
-//#if MBED_CONF_APP_NETWORK_INTERFACE == ETHERNET_TOE
 #if defined(TARGET_WIZwiki_W7500) || defined(TARGET_WIZwiki_W7500ECO) || defined(TARGET_WIZwiki_W7500P)
     NetworkInterface *NetworkInterface::get_default_instance()
     {
@@ -57,7 +54,8 @@ DHCPClient dhcp;
 #else
     NetworkInterface *NetworkInterface::get_default_instance()
     {
-        static WIZnetInterface eth(SPI_MOSI, SPI_MISO, SPI_SCK, SPI_CS, LED1);
+        //static WIZnetInterface eth(SPI_MOSI, SPI_MISO, SPI_SCK, SPI_CS, D15);
+        static WIZnetInterface eth(WIZNET_MOSI, WIZNET_MISO, WIZNET_SCK, WIZNET_CS, WIZNET_RESET);
         return &eth;
     }
 
@@ -70,7 +68,6 @@ DHCPClient dhcp;
         }
 
 #endif
-//#endif
 
 wiznet_socket* WIZnetInterface::get_sock(int fd)
 {
