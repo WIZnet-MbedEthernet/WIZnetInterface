@@ -171,7 +171,7 @@ bool WIZnet_Chip::is_connected(int socket)
     uint8_t tmpSn_SR;
     tmpSn_SR = sreg<uint8_t>(socket, Sn_SR);
     // packet sending is possible, when state is SOCK_CLOSE_WAIT.
-    if ((tmpSn_SR == SOCK_ESTABLISHED) || (tmpSn_SR == SOCK_CLOSE_WAIT)) {
+    if ((tmpSn_SR == WIZ_SOCK_ESTABLISHED) || (tmpSn_SR == WIZ_SOCK_CLOSE_WAIT)) {
         return true;
     }
     return false;
@@ -232,7 +232,7 @@ bool WIZnet_Chip::close(int socket)
         return false;
     }
     // if SOCK_CLOSED, return
-    if (sreg<uint8_t>(socket, Sn_SR) == SOCK_CLOSED) {
+    if (sreg<uint8_t>(socket, Sn_SR) == WIZ_SOCK_CLOSED) {
         return true;
     }
     // if SOCK_ESTABLISHED, send FIN-Packet to peer 
@@ -248,7 +248,7 @@ bool WIZnet_Chip::close(int socket)
 
 bool WIZnet_Chip::is_closed(int socket)
 {
-    if (sreg<uint8_t>(socket, Sn_SR) == SOCK_CLOSED) {
+    if (sreg<uint8_t>(socket, Sn_SR) == WIZ_SOCK_CLOSED) {
         return true;
     }
     return false;
@@ -262,6 +262,34 @@ int WIZnet_Chip::wait_readable(int socket, int wait_time_ms, int req_size)
     Timer t;
     t.reset();
     t.start();
+    int size1, size2;
+    while(1) {
+        // during the reading Sn_RX_RSR, it has the possible change of this register.
+        // so read twice and get same value then use size information.
+        while (1) {
+            size1 = sreg<uint16_t>(socket, Sn_RX_RSR);
+            size2 = sreg<uint16_t>(socket, Sn_RX_RSR);
+            
+            if (size1 == size2) {
+                break;
+            }
+            
+            if (wait_time_ms != (-1) && t.read_ms() > wait_time_ms) {
+               return -1;
+            }
+            
+            if (!is_connected(socket)) {
+            return NSAPI_ERROR_NO_CONNECTION;
+            }
+        }
+        
+        if ((size1 > req_size) || (wait_time_ms != (-1) && t.read_ms() > wait_time_ms)) 
+        {
+            return size1;
+        }
+    }
+    return NSAPI_ERROR_WOULD_BLOCK;
+    #if 0
     while(1) {
         int size = sreg<uint16_t>(socket, Sn_RX_RSR);
         if (size > req_size) {
@@ -272,6 +300,7 @@ int WIZnet_Chip::wait_readable(int socket, int wait_time_ms, int req_size)
         }
     }
     return -1;
+    #endif
 }
 
 int WIZnet_Chip::wait_writeable(int socket, int wait_time_ms, int req_size)
@@ -313,11 +342,11 @@ int WIZnet_Chip::send(int socket, const void * str, int len)
     while (( (tmp_Sn_IR = sreg<uint8_t>(socket, Sn_IR)) & INT_SEND_OK) != INT_SEND_OK) {
         // @Jul.10, 2014 fix contant name, and udp sendto function.
         switch (sreg<uint8_t>(socket, Sn_SR)) {
-            case SOCK_CLOSED :
+            case WIZ_SOCK_CLOSED :
                 close(socket);
                 return 0;
                 //break;
-            case SOCK_UDP :
+            case WIZ_SOCK_UDP :
                 // ARP timeout is possible.
                 if ((tmp_Sn_IR & INT_TIMEOUT) == INT_TIMEOUT) {
                     sreg<uint8_t>(socket, Sn_ICR, INT_TIMEOUT);
@@ -354,7 +383,7 @@ int WIZnet_Chip::recv(int socket, void* buf, int len)
 int WIZnet_Chip::new_socket()
 {
     for(int s = 0; s < MAX_SOCK_NUM; s++) {
-        if (sreg<uint8_t>(s, Sn_SR) == SOCK_CLOSED) {
+        if (sreg<uint8_t>(s, Sn_SR) == WIZ_SOCK_CLOSED) {
             return s;
         }
     }

@@ -305,7 +305,7 @@ private:
     
     //wiznet socket management
     struct wiznet_socket wiznet_sockets[MAX_SOCK_NUM];
-    wiznet_socket* get_sock(int fd);
+    wiznet_socket* get_sock(int fd, nsapi_protocol_t proto);
     void init_socks();
 
 	DHCPClient dhcp;

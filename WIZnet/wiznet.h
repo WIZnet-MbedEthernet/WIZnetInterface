@@ -8,10 +8,10 @@
     #include "W7500x_toe.h"
 #else
 
-    #if MBED_CONF_APP_NETWORK_INTERFACE == ETHERNET_W5500
+    #if MBED_CONF_WIZNET_INTERFACE == W5500
         #define USE_W5500  // don't use this library
         #include "W5500.h"
-    #elif MBED_CONF_APP_NETWORK_INTERFACE == ETHERNET_W6100
+    #elif MBED_CONF_WIZNET_INTERFACE == W6100
         #define USE_W6100  // don't use this library
     #endif
     //#define USE_W5100S // don't use this library

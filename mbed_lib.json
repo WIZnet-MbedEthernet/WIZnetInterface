@@ -25,9 +25,9 @@
             "help": "Enable debug logs. [true/false]",
             "value": true
         },
-        "provide-default": {
-            "help": "Provide default WizInterface. [true/false]",
-            "value": false
+        "interface": {
+            "help": "Set the wiznet module interface [W5500/W6100]",
+            "value": "W5500"
         },
         "socket-bufsize": {
             "help": "Max socket data heap usage",

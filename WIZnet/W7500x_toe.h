@@ -95,13 +95,13 @@ enum Interrupt {
     INT_SEND_OK = 0x10,
 };
 enum Status {
-    SOCK_CLOSED      = 0x00,
-    SOCK_INIT        = 0x13,
-    SOCK_LISTEN      = 0x14,
-    SOCK_SYNSENT     = 0x15,
-    SOCK_ESTABLISHED = 0x17,
-    SOCK_CLOSE_WAIT  = 0x1c,
-    SOCK_UDP         = 0x22,
+    WIZ_SOCK_CLOSED      = 0x00,
+    WIZ_SOCK_INIT        = 0x13,
+    WIZ_SOCK_LISTEN      = 0x14,
+    WIZ_SOCK_SYNSENT     = 0x15,
+    WIZ_SOCK_ESTABLISHED = 0x17,
+    WIZ_SOCK_CLOSE_WAIT  = 0x1c,
+    WIZ_SOCK_UDP         = 0x22,
 };
 enum Mode {
     MR_RST           = 0x80,   
