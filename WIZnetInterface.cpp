@@ -22,7 +22,7 @@
 
 
 static uint8_t WIZNET_DEFAULT_TESTMAC[6] = {0x00, 0x08, 0xdc, 0x19, 0x85, 0xa8};
-static int udp_local_port = 0;
+//static int udp_local_port = 0;
 
 #define SKT(h) ((wiznet_socket*)h)
 #define WIZNET_WAIT_TIMEOUT   400
@@ -50,6 +50,7 @@ DHCPClient dhcp;
     NetworkInterface *NetworkInterface::get_default_instance()
     {
         WIZnetInterface eth;
+        return &eth;
     }
 #else
 #if defined MBED_CONF_WIZNET_DEFAULT_NETWORK
@@ -70,12 +71,12 @@ DHCPClient dhcp;
 
 #endif
 
-wiznet_socket* WIZnetInterface::get_sock(int fd)
+wiznet_socket* WIZnetInterface::get_sock(int fd, nsapi_protocol_t proto)
 {
     for (int i=0; i<MAX_SOCK_NUM ; i++) {
         if (wiznet_sockets[i].fd == -1) {
             wiznet_sockets[i].fd            = fd;
-            wiznet_sockets[i].proto         = NSAPI_TCP;
+            wiznet_sockets[i].proto         = proto;
             wiznet_sockets[i].connected     = false;
             wiznet_sockets[i].callback      = NULL;
             wiznet_sockets[i].callback_data = NULL;
@@ -288,12 +289,12 @@ void WIZnetInterface::get_mac(uint8_t mac[6])
 nsapi_error_t WIZnetInterface::socket_open(nsapi_socket_t *handle, nsapi_protocol_t proto)
 {
     //a socket is created the same way regardless of the protocol
+    int temp_port;
     int sock_fd = _wiznet.new_socket();
     if (sock_fd < 0) {
         return NSAPI_ERROR_NO_SOCKET;
     }
-
-    wiznet_socket *h = get_sock(sock_fd);
+    wiznet_socket *h = get_sock(sock_fd, proto);
 
     if (!h) {
         return NSAPI_ERROR_NO_SOCKET;
@@ -306,7 +307,14 @@ nsapi_error_t WIZnetInterface::socket_open(nsapi_socket_t *handle, nsapi_protoco
 
     //new up an int to store the socket fd
     *handle = h;
-    DBG("fd: %d\n", sock_fd);
+    temp_port = _wiznet.new_port();
+    _wiznet.setLocalPort(SKT(*handle)->fd, temp_port);
+    _wiznet.setProtocol(SKT(*handle)->fd, (Protocol)(proto + 1));
+    while(_wiznet.is_closed(SKT(*handle)->fd) == true)
+    {
+        _wiznet.scmd(SKT(*handle)->fd, OPEN);
+    }
+    DBG("fd: %d, port: %d \n", SKT(*handle)->fd, temp_port);
     return 0;
 }
 
@@ -338,15 +346,18 @@ nsapi_error_t WIZnetInterface::socket_bind(nsapi_socket_t handle, const SocketAd
         return NSAPI_ERROR_DEVICE_ERROR;
     }
     DBG("fd: %d, port: %d\n", SKT(handle)->fd, address.get_port());
-
+    if(_wiznet.is_closed(SKT(handle)->fd) == false)
+    {
+        _wiznet.close(SKT(handle)->fd); 
+    }
     switch (SKT(handle)->proto) {
         case NSAPI_UDP:
             // set local port
             if (address.get_port() != 0) {
                 _wiznet.setLocalPort( SKT(handle)->fd, address.get_port() );
             } else {
-                udp_local_port++;
-                _wiznet.setLocalPort( SKT(handle)->fd, udp_local_port );
+                //udp_local_port++;
+                _wiznet.setLocalPort( SKT(handle)->fd, _wiznet.new_port() );
             }
             // set udp protocol
             _wiznet.setProtocol(SKT(handle)->fd, UDP);
@@ -439,7 +450,7 @@ nsapi_error_t WIZnetInterface::socket_accept(nsapi_socket_t server, nsapi_socket
     }
 
     //get socket for the connection
-    *handle = get_sock(SKT(server)->fd);
+    *handle = get_sock(SKT(server)->fd, SKT(server)->proto);
 
     if (!(*handle)) {
         error("No more sockets for binding");
@@ -569,6 +580,9 @@ nsapi_size_or_error_t WIZnetInterface::socket_recv(nsapi_socket_t handle, void *
         DBG("rv: %d\n", retsize);
         //INFO("rv: %d\n",err);
         recved_size += _size;
+
+        if(recved_size >= size)
+            break;
     }
 
 #if WIZNET_INTF_DBG
