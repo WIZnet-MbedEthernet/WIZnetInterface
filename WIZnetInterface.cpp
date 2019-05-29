@@ -609,19 +609,14 @@ nsapi_size_or_error_t WIZnetInterface::socket_sendto(nsapi_socket_t handle, cons
     _mutex.lock();
     DBG("fd: %d, ip: %s:%d\n", SKT(handle)->fd, address.get_ip_address(), address.get_port());
     if (_wiznet.is_closed(SKT(handle)->fd)) {
-        nsapi_error_t err = socket_bind(handle, address);
-        if (err < 0 ) {
-            DBG("failed to bind socket: %d\n", err);
-            _mutex.unlock();
-            return err;
-        }
+        return NSAPI_ERROR_NO_SOCKET;
     }
     //compare with original: int size = eth->wait_writeable(_sock_fd, _blocking ? -1 : _timeout, length-1);
     int len = _wiznet.wait_writeable(SKT(handle)->fd, WIZNET_WAIT_TIMEOUT, size-1);
     if (len < 0) {
         DBG("error: NSAPI_ERROR_WOULD_BLOCK\n");
         _mutex.unlock();
-        return NSAPI_ERROR_WOULD_BLOCK;;
+        return NSAPI_ERROR_WOULD_BLOCK;
     }
 
     // set remote host
