@@ -51,7 +51,6 @@ public:
     //W5500Interface(SPI* spi, PinName cs, PinName reset);
     WIZnetInterface(PinName mosi, PinName miso, PinName sclk, PinName cs, PinName reset);
 #endif
-
     int init();
     int init(uint8_t * mac);
     int init(const char* ip, const char* mask, const char* gateway);

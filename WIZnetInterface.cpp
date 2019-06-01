@@ -174,6 +174,10 @@ int WIZnetInterface::init(uint8_t * mac, const char* ip, const char* mask, const
     _wiznet.gateway = str_to_ip(gateway);
     _wiznet.reset();
 
+    #ifdef USE_W6100
+    _wiznet.init_chip();
+    #endif
+
     // @Jul. 8. 2014 add code. should be called to write chip.
     _wiznet.setmac();
     _wiznet.setip();
@@ -551,6 +555,8 @@ nsapi_size_or_error_t WIZnetInterface::socket_recv(nsapi_socket_t handle, void *
 
     DBG("fd: connected is %d\n", SKT(handle)->connected);
 
+    //retsize = _wiznet.recv(SKT(handle)->fd, (char*)(data), (int)size);
+#if 1
      while(1) {
         _size = _wiznet.wait_readable(SKT(handle)->fd, WIZNET_WAIT_TIMEOUT);
         DBG("fd: _size %d recved_size %d\n", _size, recved_size);
@@ -569,6 +575,7 @@ nsapi_size_or_error_t WIZnetInterface::socket_recv(nsapi_socket_t handle, void *
         {
             _size = size;
         }
+
         retsize = _wiznet.recv(SKT(handle)->fd, (char*)((uint32_t *)data + recved_size), (int)_size);
 //	    printf("[TEST 400] : %d\r\n",recved_size);
 //	    for(idx=0; idx<16; idx++)
@@ -584,7 +591,7 @@ nsapi_size_or_error_t WIZnetInterface::socket_recv(nsapi_socket_t handle, void *
         if(recved_size >= size)
             break;
     }
-
+#endif
 #if WIZNET_INTF_DBG
     if (retsize > 0) {
         debug("[socket_recv] buffer:");
@@ -670,6 +677,45 @@ nsapi_size_or_error_t WIZnetInterface::socket_recvfrom(nsapi_socket_t handle, So
         return NSAPI_ERROR_WOULD_BLOCK;
     }
 
+    
+    #ifdef USE_W6100
+    uint8_t Temp_Head[2];
+    uint16_t port;
+
+    _wiznet.recv(SKT(handle)->fd, (char*)Temp_Head, sizeof(Temp_Head));
+    DBG("Head : %X%X\n", Temp_Head[0], Temp_Head[1]);
+    nsapi_size_t udp_size = ((Temp_Head[0]&0x07)<<8)|Temp_Head[2];
+
+    if (udp_size > (len-sizeof(info))) {
+        DBG("error: udp_size > (len-sizeof(info))\n");
+        _mutex.unlock();
+        return -1;
+    }
+
+    if(Temp_Head[0]&0x80)
+    {
+        //ipv6
+        uint8_t Temp_info[18];
+        _wiznet.recv(SKT(handle)->fd, (char*)Temp_info, sizeof(Temp_info));
+        //to do next address and port
+    }
+    else
+    {
+        //ipv4
+        char addr[17];
+        uint8_t Temp_info[6];
+        _wiznet.recv(SKT(handle)->fd, (char*)Temp_info, sizeof(Temp_info));
+        snprintf(addr, sizeof(addr), "%d.%d.%d.%d", Temp_info[0], Temp_info[1], Temp_info[2], Temp_info[3]);
+        uint16_t port = Temp_info[4]<<8|Temp_info[5];
+
+        if (address != NULL) {
+        //DBG("[socket_recvfrom] warn: addressis NULL");
+        address->set_ip_address(addr);
+        address->set_port(port);
+        }
+    }
+    
+    #else
     //receive endpoint information
     _wiznet.recv(SKT(handle)->fd, (char*)info, sizeof(info));
 
@@ -690,7 +736,7 @@ nsapi_size_or_error_t WIZnetInterface::socket_recvfrom(nsapi_socket_t handle, So
         _mutex.unlock();
         return -1;
     }
-
+    #endif
     //receive from socket
     nsapi_size_or_error_t err = _wiznet.recv(SKT(handle)->fd, (char*)buffer, udp_size);
     DBG("rv: %d\n", err);

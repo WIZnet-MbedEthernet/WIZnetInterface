@@ -3,6 +3,8 @@
 
 //#include "mbed.h"
 //#include "mbed_debug.h"
+#define W5500       1
+#define W6100       2
 
 #if defined(TARGET_WIZwiki_W7500) || defined(TARGET_WIZwiki_W7500ECO) || defined(TARGET_WIZwiki_W7500P)
     #include "W7500x_toe.h"
@@ -13,6 +15,7 @@
         #include "W5500.h"
     #elif MBED_CONF_WIZNET_INTERFACE == W6100
         #define USE_W6100  // don't use this library
+        #include "W6100.h"
     #endif
     //#define USE_W5100S // don't use this library
 
