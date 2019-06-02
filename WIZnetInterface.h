@@ -35,6 +35,7 @@ struct wiznet_socket {
    int   fd;
    nsapi_protocol_t proto;
    bool  connected;
+   bool  server;
    void  (*callback)(void *);
    void  *callback_data;
 }; 

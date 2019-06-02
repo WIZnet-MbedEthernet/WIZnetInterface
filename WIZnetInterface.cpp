@@ -306,6 +306,7 @@ nsapi_error_t WIZnetInterface::socket_open(nsapi_socket_t *handle, nsapi_protoco
 
     h->proto         = proto;
     h->connected     = false;
+    h->server        = false;
     h->callback      = NULL;
     h->callback_data = NULL;
 
@@ -364,7 +365,7 @@ nsapi_error_t WIZnetInterface::socket_bind(nsapi_socket_t handle, const SocketAd
                 _wiznet.setLocalPort( SKT(handle)->fd, _wiznet.new_port() );
             }
             // set udp protocol
-            _wiznet.setProtocol(SKT(handle)->fd, UDP);
+            _wiznet.setProtocol(SKT(handle)->fd, (Protocol)(SKT(handle)->proto + 1));
             _wiznet.scmd(SKT(handle)->fd, OPEN);
             /*
                         uint8_t tmpSn_SR;
@@ -396,6 +397,7 @@ nsapi_error_t WIZnetInterface::socket_listen(nsapi_socket_t handle, int backlog)
             return NSAPI_ERROR_NO_SOCKET;
         }
     */
+    SKT(handle)->server = true;
     _mutex.lock();
     _wiznet.scmd(SKT(handle)->fd, LISTEN);
     _mutex.unlock();
@@ -544,17 +546,64 @@ nsapi_size_or_error_t WIZnetInterface::socket_recv(nsapi_socket_t handle, void *
     int _size;
     nsapi_size_or_error_t retsize;
 
-    DBG("fd: %d\n", SKT(handle)->fd);
+    DBG("fd: %d port: %d\n", SKT(handle)->fd, _wiznet.sreg<uint16_t>(SKT(handle)->fd, Sn_PORTR));
     //INFO("fd: %d\n", SKT(handle)->fd);
     // add to cover exception.
     _mutex.lock();
+
+    #ifdef USE_W6100
+    bool temp_server = SKT(handle)->server;
+    uint16_t temp_port;
+    switch(_wiznet.socket_status(SKT(handle)->fd))
+    {
+        case WIZ_SOCK_CLOSED :
+        break;
+        case WIZ_SOCK_INIT:
+            if(SKT(handle)->server == true)
+            {
+                _mutex.lock();
+                _wiznet.scmd(SKT(handle)->fd, LISTEN);
+                _mutex.unlock();
+            }
+        break;
+        case WIZ_SOCK_LISTEN:
+        break;
+        case WIZ_SOCK_SYNSENT:
+        break;
+        case WIZ_SOCK_ESTABLISHED:
+            if(SKT(handle)->connected == false)
+            {
+                SKT(handle)->connected = true;
+            }
+        break;
+        case WIZ_SOCK_CLOSE_WAIT:
+            temp_port = _wiznet.sreg<uint16_t>(SKT(handle)->fd, Sn_PORTR);
+            DBG("fd: port %d \n", temp_port);
+            _wiznet.close(SKT(handle)->fd);
+            _wiznet.setLocalPort(SKT(handle)->fd, temp_port);
+            _wiznet.setProtocol(SKT(handle)->fd, (Protocol)(SKT(handle)->proto + 1));
+            _wiznet.scmd(SKT(handle)->fd, OPEN);
+            DBG("fd: server %d || socket status [%X]\n", SKT(handle)->server, _wiznet.socket_status(SKT(handle)->fd));
+            if(temp_server == true)
+            {
+                SKT(handle)->server = true;
+                _mutex.lock();
+                _wiznet.scmd(SKT(handle)->fd, LISTEN);
+                _mutex.unlock();
+            }
+        break;
+        default :
+        break;
+    }
+    #endif
+
+    DBG("fd: connected is %d || socket status [%X]\n", SKT(handle)->connected, _wiznet.socket_status(SKT(handle)->fd));
+
     if ((SKT(handle)->fd < 0) || !SKT(handle)->connected) {
         _mutex.unlock();
         return NSAPI_ERROR_NO_CONNECTION;
     }
-
-    DBG("fd: connected is %d\n", SKT(handle)->connected);
-
+    
     //retsize = _wiznet.recv(SKT(handle)->fd, (char*)(data), (int)size);
 #if 1
      while(1) {

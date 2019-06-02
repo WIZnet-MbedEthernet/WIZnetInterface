@@ -182,6 +182,11 @@ bool WIZnet_Chip::is_connected(int socket)
     }
     return false;
 }
+// socket status return
+uint8_t WIZnet_Chip::socket_status(int socket)
+{
+    return sreg<uint8_t>(socket, Sn_SR);
+}
 
 // Reset the chip & set the buffer
 void WIZnet_Chip::reset()
@@ -274,9 +279,9 @@ int WIZnet_Chip::wait_readable(int socket, int wait_time_ms, int req_size)
             return NSAPI_ERROR_NO_CONNECTION;
             }
         }
-        //DBG("size %X : %X \n", size1, size2);
         if ((size1 > req_size) || (wait_time_ms != (-1) && t.read_ms() > wait_time_ms)) 
         {
+            DBG("size %X : %X \n", size1, size2);
             return size1;
         }
     }

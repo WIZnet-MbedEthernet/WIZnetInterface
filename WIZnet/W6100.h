@@ -218,7 +218,7 @@ public:
 	bool setLocalPort(int socket, uint16_t port);
 
     /*
-    * Reset the W5500
+    * Reset the W6100
     */
     void reset();
    
@@ -255,6 +255,13 @@ public:
     * @ returns true if socket is closed.
     */
     bool is_closed(int socket);
+
+    /*
+    * Check status of socket.
+    *
+    * @ returns 1byte socket status.
+    */
+    uint8_t socket_status(int socket);
 
     /*
     * @param str string to be sent
