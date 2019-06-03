@@ -11,10 +11,10 @@
 #else
 
     #if MBED_CONF_WIZNET_INTERFACE == W5500
-        #define USE_W5500  // don't use this library
+        #define USE_W5500  
         #include "W5500.h"
     #elif MBED_CONF_WIZNET_INTERFACE == W6100
-        #define USE_W6100  // don't use this library
+        #define USE_W6100  
         #include "W6100.h"
     #endif
     //#define USE_W5100S // don't use this library
@@ -81,5 +81,4 @@
 #include "W6100.h"
 #endif
 
-//comming soon!
 */
