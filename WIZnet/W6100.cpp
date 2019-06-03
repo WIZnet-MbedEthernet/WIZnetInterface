@@ -261,6 +261,9 @@ int WIZnet_Chip::wait_readable(int socket, int wait_time_ms, int req_size)
     while(1) {
         //int size = sreg<uint16_t>(socket, Sn_RX_RSR);
         int size1, size2;
+        if (!is_connected(socket)) {
+            return NSAPI_ERROR_NO_CONNECTION;
+        }
         // during the reading Sn_RX_RSR, it has the possible change of this register.
         // so read twice and get same value then use size information.
         while (1) {
@@ -273,10 +276,6 @@ int WIZnet_Chip::wait_readable(int socket, int wait_time_ms, int req_size)
             
             if (wait_time_ms != (-1) && t.read_ms() > wait_time_ms) {
                return -1;
-            }
-            
-            if (!is_connected(socket)) {
-            return NSAPI_ERROR_NO_CONNECTION;
             }
         }
         if ((size1 > req_size) || (wait_time_ms != (-1) && t.read_ms() > wait_time_ms)) 
@@ -301,6 +300,9 @@ int WIZnet_Chip::wait_writeable(int socket, int wait_time_ms, int req_size)
     while(1) {
         //int size = sreg<uint16_t>(socket, Sn_TX_FSR);
         int size1, size2;
+        if (!is_connected(socket)) {
+            return NSAPI_ERROR_NO_CONNECTION;
+        }
         // during the reading Sn_TX_FSR, it has the possible change of this register.
         // so read twice and get same value then use size information.
         while(1)
@@ -317,11 +319,10 @@ int WIZnet_Chip::wait_writeable(int socket, int wait_time_ms, int req_size)
                 return NSAPI_ERROR_WOULD_BLOCK;
             }        
         } 
-        if (size1 > req_size) {
+        if ((size1 > req_size) || (wait_time_ms != (-1) && t.read_ms() > wait_time_ms)) 
+        {
+            //DBG("size %X : %X \n", size1, size2);
             return size1;
-        }
-        if (wait_time_ms != (-1) && t.read_ms() > wait_time_ms) {
-            break;
         }
     }
     return NSAPI_ERROR_WOULD_BLOCK;
