@@ -281,7 +281,7 @@ int WIZnet_Chip::wait_readable(int socket, int wait_time_ms, int req_size)
         }
         if ((size1 > req_size) || (wait_time_ms != (-1) && t.read_ms() > wait_time_ms)) 
         {
-            DBG("size %X : %X \n", size1, size2);
+            //DBG("size %X : %X \n", size1, size2);
             return size1;
         }
     }
@@ -296,23 +296,27 @@ int WIZnet_Chip::wait_writeable(int socket, int wait_time_ms, int req_size)
     Timer t;
     t.reset();
     t.start();
-    t.start();
+    //t.start();
         
     while(1) {
         //int size = sreg<uint16_t>(socket, Sn_TX_FSR);
         int size1, size2;
         // during the reading Sn_TX_FSR, it has the possible change of this register.
         // so read twice and get same value then use size information.
-        do {
+        while(1)
+        {
             size1 = sreg<uint16_t>(socket, Sn_TX_FSR);
             size2 = sreg<uint16_t>(socket, Sn_TX_FSR);
+            if(size1 == size2)
+                break;
+
             DBG("The time taken was %d %d %f seconds\n", wait_time_ms, t.read_ms(), t.read());
             
             if (wait_time_ms != (-1) && t.read_ms() > wait_time_ms) {
                 
                 return NSAPI_ERROR_WOULD_BLOCK;
             }        
-        } while (size1 != size2);
+        } 
         if (size1 > req_size) {
             return size1;
         }

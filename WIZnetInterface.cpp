@@ -367,6 +367,7 @@ nsapi_error_t WIZnetInterface::socket_bind(nsapi_socket_t handle, const SocketAd
             // set udp protocol
             _wiznet.setProtocol(SKT(handle)->fd, (Protocol)(SKT(handle)->proto + 1));
             _wiznet.scmd(SKT(handle)->fd, OPEN);
+            SKT(handle)->connected = true;
             /*
                         uint8_t tmpSn_SR;
                 		tmpSn_SR = _w5500.sreg<uint8_t>(SKT(handle)->fd, Sn_SR);
@@ -637,7 +638,7 @@ nsapi_size_or_error_t WIZnetInterface::socket_recv(nsapi_socket_t handle, void *
         //INFO("rv: %d\n",err);
         recved_size += _size;
 
-        if(recved_size >= size)
+        //if(recved_size >= size)
             break;
     }
 #endif
@@ -733,10 +734,10 @@ nsapi_size_or_error_t WIZnetInterface::socket_recvfrom(nsapi_socket_t handle, So
 
     _wiznet.recv(SKT(handle)->fd, (char*)Temp_Head, sizeof(Temp_Head));
     DBG("Head : %X%X\n", Temp_Head[0], Temp_Head[1]);
-    nsapi_size_t udp_size = ((Temp_Head[0]&0x07)<<8)|Temp_Head[2];
+    nsapi_size_t udp_size = ((Temp_Head[0]&0x07)<<8)|Temp_Head[1];
 
     if (udp_size > (len-sizeof(info))) {
-        DBG("error: udp_size > (len-sizeof(info))\n");
+        DBG("error: udp_size[%d] > (len[%d]-sizeof(info)[%d])\n", udp_size, len, sizeof(info) );
         _mutex.unlock();
         return -1;
     }
