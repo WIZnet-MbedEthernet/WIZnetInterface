@@ -552,61 +552,13 @@ nsapi_size_or_error_t WIZnetInterface::socket_recv(nsapi_socket_t handle, void *
     // add to cover exception.
     _mutex.lock();
 
-    #ifdef USE_W6100
-    bool temp_server = SKT(handle)->server;
-    uint16_t temp_port;
-    switch(_wiznet.socket_status(SKT(handle)->fd))
-    {
-        case WIZ_SOCK_CLOSED :
-        break;
-        case WIZ_SOCK_INIT:
-            if(SKT(handle)->server == true)
-            {
-                _mutex.lock();
-                _wiznet.scmd(SKT(handle)->fd, LISTEN);
-                _mutex.unlock();
-            }
-        break;
-        case WIZ_SOCK_LISTEN:
-        break;
-        case WIZ_SOCK_SYNSENT:
-        break;
-        case WIZ_SOCK_ESTABLISHED:
-            if(SKT(handle)->connected == false)
-            {
-                SKT(handle)->connected = true;
-            }
-        break;
-        case WIZ_SOCK_CLOSE_WAIT:
-            temp_port = _wiznet.sreg<uint16_t>(SKT(handle)->fd, Sn_PORTR);
-            DBG("fd: port %d \n", temp_port);
-            _wiznet.close(SKT(handle)->fd);
-            _wiznet.setLocalPort(SKT(handle)->fd, temp_port);
-            _wiznet.setProtocol(SKT(handle)->fd, (Protocol)(SKT(handle)->proto + 1));
-            _wiznet.scmd(SKT(handle)->fd, OPEN);
-            DBG("fd: server %d || socket status [%X]\n", SKT(handle)->server, _wiznet.socket_status(SKT(handle)->fd));
-            if(temp_server == true)
-            {
-                SKT(handle)->server = true;
-                _mutex.lock();
-                _wiznet.scmd(SKT(handle)->fd, LISTEN);
-                _mutex.unlock();
-            }
-        break;
-        default :
-        break;
-    }
-    #endif
-
     DBG("fd: connected is %d || socket status [%X]\n", SKT(handle)->connected, _wiznet.socket_status(SKT(handle)->fd));
 
     if ((SKT(handle)->fd < 0) || !SKT(handle)->connected) {
         _mutex.unlock();
         return NSAPI_ERROR_NO_CONNECTION;
     }
-    
-    //retsize = _wiznet.recv(SKT(handle)->fd, (char*)(data), (int)size);
-#if 1
+ 
      while(1) {
         _size = _wiznet.wait_readable(SKT(handle)->fd, WIZNET_WAIT_TIMEOUT);
         DBG("fd: _size %d recved_size %d\n", _size, recved_size);
@@ -627,21 +579,13 @@ nsapi_size_or_error_t WIZnetInterface::socket_recv(nsapi_socket_t handle, void *
         }
 
         retsize = _wiznet.recv(SKT(handle)->fd, (char*)((uint32_t *)data + recved_size), (int)_size);
-//	    printf("[TEST 400] : %d\r\n",recved_size);
-//	    for(idx=0; idx<16; idx++)
-//	    {
-//	        printf(" %02x",((uint8_t*)data)[idx+recved_size]);
-//	    }
-//	    printf("\r\n");
 
         DBG("rv: %d\n", retsize);
-        //INFO("rv: %d\n",err);
         recved_size += _size;
 
         //if(recved_size >= size)
             break;
     }
-#endif
 #if WIZNET_INTF_DBG
     if (retsize > 0) {
         debug("[socket_recv] buffer:");
