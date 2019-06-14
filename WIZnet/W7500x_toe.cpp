@@ -95,7 +95,7 @@ bool WIZnet_Chip::setip()
     return true;
 }
 
-bool WIZnet_Chip::setProtocol(int socket, Protocol p)
+bool WIZnet_Chip::setProtocolMode(int socket, ProtocolMode p)
 {
     if (socket < 0) {
         return false;

@@ -11,10 +11,17 @@
 
 #define DEFAULT_WAIT_RESP_TIMEOUT 500
 
-enum Protocol {
-    CLOSED = 0,
-    TCP    = 1,
-    UDP    = 2,
+enum ProtocolMode {
+    CLOSED  = 0,
+    TCP4    = 1,
+    UDP4    = 2,
+    IPRAW4  = 3,
+    MACRAW  = 7,
+    TCP6    = 9,
+    UCP6    = 10,
+    IPRAW6  = 11,
+    TCPD    = 13,
+    UDPD    = 14
 };
 
 enum Command {
@@ -149,6 +156,16 @@ enum Status {
 #define Sn_RX_RD      0x0228
 #define Sn_RX_WR      0x022C
 
+//define protocol
+#define Sn_MR_TCP            (0x01)
+#define Sn_MR_UDP            (0x02)
+#define Sn_MR_IPRAW          (0x03)
+#define Sn_MR_MACRAW         (0x07)
+#define Sn_MR_TCP6           (0x09)
+#define Sn_MR_UDP6           (0x0A)
+#define Sn_MR_IPRAW6         (0x0B)
+#define Sn_MR_TCPD           (0x0D)
+#define Sn_MR_UDPD           (0x0E)
 
 //to do modify w6100 version
 class WIZnet_Chip {
@@ -186,12 +203,13 @@ public:
     */ 
     bool setip();
 
+    bool setip6();
     /*
     * Disconnect the connection
     *
     * @ returns true 
     */
-    bool disconnect();
+    bool disconnect(int socket);
 
     /*
     * Open a tcp connection with the specified host on the specified port
@@ -203,12 +221,12 @@ public:
     bool connect(int socket, const char * host, int port, int timeout_ms = 10*1000);
 
     /*
-    * Set the protocol (UDP or TCP)
-    *
-    * @param p protocol
+    * Set the mode (UDP or TCP)
+    * //to do modify script
+    * @param p WizMode
     * @ returns true if successful
     */
-    bool setProtocol(int socket, Protocol p);
+    bool setProtocolMode(int socket, ProtocolMode p);
 
     /*
     * Set local port number
@@ -352,6 +370,14 @@ public:
         spi_write(addr, cb, buf, sizeof(buf));
     }
 
+    void reg_wr_ip6(uint16_t addr, const uint8_t *data)
+    {
+        spi_write(addr, 0x04, data, 16);
+    }
+    void reg_rd_ip6(uint16_t addr, uint8_t* data) {
+        spi_read(addr, 0x00, data, 16);
+    }
+
     void sreg_ip(int socket, uint16_t addr, const char* ip) {
         reg_wr_ip(addr, (0x0C + (socket << 5)), ip);
     }
@@ -362,6 +388,11 @@ public:
     uint32_t gateway;
     uint32_t dnsaddr;
     bool dhcp;
+    uint8_t     lla[16];   ///< Source Link Local Address
+    uint8_t     gua[16];   ///< Source Global Unicast Address
+    uint8_t     sn6[16];   ///< IPv6 Prefix
+    uint8_t     gw6[16];   ///< Gateway IPv6 Address
+    uint8_t     dns6[16];  ///< DNS server IPv6 Address
 
 protected:
     static WIZnet_Chip* inst;

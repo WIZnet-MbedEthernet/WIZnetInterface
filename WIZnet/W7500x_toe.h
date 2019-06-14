@@ -68,7 +68,7 @@ enum PHYMode {
 
 //bool plink(int wait_time_ms= 3*1000);
 
-enum Protocol {
+enum ProtocolMode {
     CLOSED = 0,
     TCP    = 1,
     UDP    = 2,
@@ -146,12 +146,12 @@ public:
     bool connect(int socket, const char * host, int port, int timeout_ms = 10*1000);
 
     /*
-    * Set the protocol (UDP or TCP)
+    * Set the protocol Mode (UDP or TCP)
     *
-    * @param p protocol
+    * @param p protocolMode
     * @ returns true if successful
     */
-    bool setProtocol(int socket, Protocol p);
+    bool setProtocolMode(int socket, ProtocolMode p);
 
     /*
     * Set local port number

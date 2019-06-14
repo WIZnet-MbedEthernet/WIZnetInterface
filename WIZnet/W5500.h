@@ -13,7 +13,7 @@
 
 #define DEFAULT_WAIT_RESP_TIMEOUT 500
 
-enum Protocol {
+enum ProtocolMode {
     CLOSED = 0,
     TCP    = 1,
     UDP    = 2,
@@ -129,7 +129,7 @@ public:
     * @param p protocol
     * @ returns true if successful
     */
-    bool setProtocol(int socket, Protocol p);
+    bool setProtocolMode(int socket, ProtocolMode p);
 
     /*
     * Set local port number

@@ -108,12 +108,41 @@ bool WIZnet_Chip::setip()
     return true;
 }
 
-bool WIZnet_Chip::setProtocol(int socket, Protocol p)
+bool WIZnet_Chip::setip6()
+{
+    uint8_t temp_data[16];
+    reg_wr_ip6(LLAR, lla);
+    reg_wr_ip6(GUAR, gua);
+    reg_wr_ip6(SUB6R, sn6);
+    reg_wr_ip6(GA6R, gw6);
+
+    reg_rd_ip6(LLAR, temp_data);
+    DBG("LLA [%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X] \r\n", temp_data[0], temp_data[1], 
+    temp_data[2], temp_data[3], temp_data[4], temp_data[5], temp_data[6], temp_data[7], temp_data[8], 
+    temp_data[9], temp_data[10], temp_data[11], temp_data[12], temp_data[13], temp_data[14], temp_data[15]);
+    reg_rd_ip6(GUAR, temp_data);
+    DBG("GUA [%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X] \r\n", temp_data[0], temp_data[1], 
+    temp_data[2], temp_data[3], temp_data[4], temp_data[5], temp_data[6], temp_data[7], temp_data[8], 
+    temp_data[9], temp_data[10], temp_data[11], temp_data[12], temp_data[13], temp_data[14], temp_data[15]);
+    reg_rd_ip6(SUB6R, temp_data);
+    DBG("SUB6R [%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X] \r\n", temp_data[0], temp_data[1], 
+    temp_data[2], temp_data[3], temp_data[4], temp_data[5], temp_data[6], temp_data[7], temp_data[8], 
+    temp_data[9], temp_data[10], temp_data[11], temp_data[12], temp_data[13], temp_data[14], temp_data[15]);
+    reg_rd_ip6(GA6R, temp_data);
+    DBG("GA6R [%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X] \r\n", temp_data[0], temp_data[1], 
+    temp_data[2], temp_data[3], temp_data[4], temp_data[5], temp_data[6], temp_data[7], temp_data[8], 
+    temp_data[9], temp_data[10], temp_data[11], temp_data[12], temp_data[13], temp_data[14], temp_data[15]);
+    return true;
+}
+bool WIZnet_Chip::setProtocolMode(int socket, ProtocolMode p)
 {
     if (socket < 0) {
         return false;
     }
     sreg<uint8_t>(socket, Sn_MR, p);
+    sreg<uint8_t>(socket, Sn_MR2, 0x01);
+    DBG("socket[%d] Sn_MR[%2X]\r\n", socket, sreg<uint8_t>(socket, Sn_MR));
+    DBG("socket[%d] Sn_MR2[%2X]\r\n", socket, sreg<uint8_t>(socket, Sn_MR2));
     return true;
 }
 
@@ -131,7 +160,7 @@ bool WIZnet_Chip::connect(int socket, const char * host, int port, int timeout_m
     if (socket < 0) {
         return false;
     }
-    sreg<uint8_t>(socket, Sn_MR, TCP);
+    sreg<uint8_t>(socket, Sn_MR, TCP4);
     scmd(socket, OPEN);
     sreg_ip(socket, Sn_DIPR, host);
     sreg<uint16_t>(socket, Sn_DPORT, port);
@@ -167,8 +196,9 @@ bool WIZnet_Chip::gethostbyname(const char* host, uint32_t* ip)
     return false;
 }
 
-bool WIZnet_Chip::disconnect()
+bool WIZnet_Chip::disconnect(int socket)
 {
+    scmd(socket, DISCON);
     return true;
 }
 
@@ -233,7 +263,7 @@ bool WIZnet_Chip::close(int socket)
     if (sreg<uint8_t>(socket, Sn_SR) == WIZ_SOCK_CLOSED) {
         return true;
     }
-    if (sreg<uint8_t>(socket, Sn_MR) == TCP) {
+    if (sreg<uint8_t>(socket, Sn_MR) == TCP4) {
         scmd(socket, DISCON);
     }
     scmd(socket, CLOSE);
