@@ -64,6 +64,7 @@ DHCPClient dhcp;
     WIZnetInterface::WIZnetInterface(PinName mosi, PinName miso, PinName sclk, PinName cs, PinName reset) :
         _wiznet(mosi, miso, sclk, cs, reset)
         {
+            _wiznet.reset();
             ip_set = false;
             _dhcp_enable = true;
             thread_read_socket.start(callback(this, &WIZnetInterface::socket_check_read));
@@ -125,7 +126,6 @@ int WIZnetInterface::init()
     //_w5500.reg_wr<uint8_t>(SIMR, 0xFF); //
     for (int i =0; i < 6; i++) _wiznet.mac[i] = WIZNET_DEFAULT_TESTMAC[i];
     _wiznet.setmac();
-    _wiznet.reset();
     init_socks();
     return 0;
 }
@@ -137,7 +137,6 @@ int WIZnetInterface::init(uint8_t * mac)
     // should set the mac address and keep the value in this class
     for (int i =0; i < 6; i++) _wiznet.mac[i] = mac[i];
     _wiznet.setmac();
-    _wiznet.reset();  // reset chip and write mac address
     init_socks();
     return 0;
 }
@@ -152,7 +151,6 @@ int WIZnetInterface::init(const char* ip, const char* mask, const char* gateway)
     ip_set = true;
     _wiznet.netmask = str_to_ip(mask);
     _wiznet.gateway = str_to_ip(gateway);
-    _wiznet.reset();
 
     // @Jul. 8. 2014 add code. should be called to write chip.
     _wiznet.setip();
@@ -172,7 +170,6 @@ int WIZnetInterface::init(uint8_t * mac, const char* ip, const char* mask, const
     ip_set = true;
     _wiznet.netmask = str_to_ip(mask);
     _wiznet.gateway = str_to_ip(gateway);
-    _wiznet.reset();
 
     // @Jul. 8. 2014 add code. should be called to write chip.
     _wiznet.setmac();
@@ -476,7 +473,7 @@ nsapi_error_t WIZnetInterface::socket_accept(nsapi_socket_t server, nsapi_socket
     //create a new tcp socket for the server
     SKT(server)->fd = _wiznet.new_socket();
     if (SKT(server)->fd < 0) {
-        error("No more sockets for listening");
+        //error("No more sockets for listening");
         //return NSAPI_ERROR_NO_SOCKET;
         // already accepted socket, so return 0, but there is no listen socket anymore.
         return 0;
@@ -489,14 +486,14 @@ nsapi_error_t WIZnetInterface::socket_accept(nsapi_socket_t server, nsapi_socket
 
     // and then, for the next connection, server socket should be assigned new one.
     if (socket_bind(server, _addr) < 0) {
-        error("No more sockets for listening");
+        //error("No more sockets for listening");
         //return NSAPI_ERROR_NO_SOCKET;
         // already accepted socket, so return 0, but there is no listen socket anymore.
         return 0;
     }
 
     if (socket_listen(server, 1) < 0) {
-        error("No more sockets for listening");
+        //error("No more sockets for listening");
         // already accepted socket, so return 0, but there is no listen socket anymore.
         return 0;
     }
