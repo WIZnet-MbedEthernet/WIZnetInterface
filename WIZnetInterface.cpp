@@ -594,7 +594,9 @@ nsapi_size_or_error_t WIZnetInterface::socket_recv(nsapi_socket_t handle, void *
     nsapi_size_or_error_t retsize;
     uint8_t socket_status;
 
+    #ifdef USE_W6100 
     DBG("fd: %d port: %d\n", SKT(handle)->fd, _wiznet.sreg<uint16_t>(SKT(handle)->fd, Sn_PORTR));
+    #endif
     //INFO("fd: %d\n", SKT(handle)->fd);
     // add to cover exception.
     _mutex.lock();
@@ -651,8 +653,10 @@ nsapi_size_or_error_t WIZnetInterface::socket_recv(nsapi_socket_t handle, void *
         break;
     }
     #endif
+    #ifdef USE_W6100
     socket_status = _wiznet.socket_status(SKT(handle)->fd);
     DBG("fd: connected is %d || socket status [%X]\n", SKT(handle)->connected, socket_status);
+    #endif
 
     if ((SKT(handle)->fd < 0) || !SKT(handle)->connected) {
         _mutex.unlock();

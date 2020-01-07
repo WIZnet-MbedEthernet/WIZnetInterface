@@ -23,7 +23,7 @@
         },
         "debug": {
             "help": "Enable debug logs. [true/false]",
-            "value": true
+            "value": false
         },
         "interface": {
             "help": "Set the wiznet module interface [W5500/W6100]",
@@ -36,7 +36,7 @@
         "default-network": {
             "help": "Set the default network interface",
             "options" : [true,false],
-            "value": false
+            "value": true
         }
     },
     "target_overrides": {
