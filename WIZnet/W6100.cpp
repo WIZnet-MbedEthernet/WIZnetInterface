@@ -1,16 +1,15 @@
-// modified 08/08/2018 by Bongjun Hur
+//to do modify W5500 -> W6100
 
 #include "mbed.h"
 #include "mbed_debug.h"
 #include "wiznet.h"
 
-#ifdef USE_W5500
+#ifdef USE_W6100
 
 //Debug is disabled by default
-#define w5500_DBG 0
-
-#if w5500_DBG
-#define DBG(...) do{debug("%p %d %s ", this,__LINE__,__PRETTY_FUNCTION__); debug(__VA_ARGS__); } while(0);
+#define w6100_DBG 1
+#if w6100_DBG
+#define DBG(...) do{debug("%p %d %s \r\n", this,__LINE__,__PRETTY_FUNCTION__); debug(__VA_ARGS__); } while(0);
 //#define DBG(x, ...) debug("[W5500:DBG]"x"\r\n", ##__VA_ARGS__);
 #define WARN(x, ...) debug("[W5500:WARN]"x"\r\n", ##__VA_ARGS__);
 #define ERR(x, ...) debug("[W5500:ERR]"x"\r\n", ##__VA_ARGS__);
@@ -24,8 +23,8 @@
 
 #define DBG_SPI 0
 
-#if !defined(MBED_CONF_W5500_SPI_SPEED)
-#define MBED_CONF_W5500_SPI_SPEED   100000
+#if !defined(MBED_CONF_W6100_SPI_SPEED)
+#define MBED_CONF_W6100_SPI_SPEED   100000
 #endif
 
 
@@ -37,7 +36,7 @@ WIZnet_Chip::WIZnet_Chip(PinName mosi, PinName miso, PinName sclk, PinName _cs, 
     spi = new SPI(mosi, miso, sclk);
     DBG("SPI interface init...\n");
     spi->format(32, 0);
-    spi->frequency(MBED_CONF_W5500_SPI_SPEED);
+    spi->frequency(MBED_CONF_W6100_SPI_SPEED);
     cs = 1;
     reset_pin = 1;
     inst = this;
@@ -61,6 +60,34 @@ WIZnet_Chip::~WIZnet_Chip()
     delete spi;
 }
 
+bool WIZnet_Chip::init_chip()
+{
+    //Check PHY Link 
+    while(!(reg_rd<uint16_t>(PHYSR) & 0x0001))
+    {
+        DBG("PHY Link fail [%X] \n",reg_rd<uint16_t>(PHYSR));
+    }
+    DBG("PHY Link OK. \n");
+
+    //Set interrupt mask 
+    //Interrupt UNR4 Enable
+    reg_wr<uint8_t>(IMR, 0x02);
+    DBG("Set Interrupt Mask IMR[%X] \n",reg_rd<uint16_t>(IMR));
+    //Interrupt SIMR(SOCKET Interrupt Mask) Disable
+    reg_wr<uint8_t>(SIMR, 0x00);
+    //Interrupt SLIMR(SOCKET-less Interrupt Mask) Disable
+    reg_wr<uint8_t>(SLIMR, 0x00);
+    DBG("Set Interrupt Mask. \n");
+
+    //Check Chip Version
+    while(reg_rd<uint16_t>(VER) != 0x4661);
+    DBG("Check Version [%X]. \n", reg_rd<uint16_t>(VER));
+
+    reg_wr<uint8_t>(NETLCKR, 0x3A);
+    DBG(" NET Unlock [%X]\n", reg_rd<uint8_t>(NETLCKR));
+    
+    return true;
+}
 bool WIZnet_Chip::setmac()
 {
     reg_wr_mac(SHAR, mac);
@@ -73,15 +100,49 @@ bool WIZnet_Chip::setip()
     reg_wr<uint32_t>(SIPR, ip);
     reg_wr<uint32_t>(GAR, gateway);
     reg_wr<uint32_t>(SUBR, netmask);
+
+    
+    DBG("IP [%X], [%X] \r\n", ip, reg_rd<uint32_t>(SIPR));
+    DBG("Gate [%X], [%X] \r\n", gateway, reg_rd<uint32_t>(GAR));
+    DBG("netmask [%X], [%X] \r\n", netmask, reg_rd<uint32_t>(SUBR));
     return true;
 }
 
+bool WIZnet_Chip::setip6()
+{
+    uint8_t temp_data[16];
+    reg_wr_ip6(LLAR, lla);
+    reg_wr_ip6(GUAR, gua);
+    reg_wr_ip6(SUB6R, sn6);
+    reg_wr_ip6(GA6R, gw6);
+
+    reg_rd_ip6(LLAR, temp_data);
+    DBG("LLA [%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X] \r\n", temp_data[0], temp_data[1], 
+    temp_data[2], temp_data[3], temp_data[4], temp_data[5], temp_data[6], temp_data[7], temp_data[8], 
+    temp_data[9], temp_data[10], temp_data[11], temp_data[12], temp_data[13], temp_data[14], temp_data[15]);
+    reg_rd_ip6(GUAR, temp_data);
+    DBG("GUA [%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X] \r\n", temp_data[0], temp_data[1], 
+    temp_data[2], temp_data[3], temp_data[4], temp_data[5], temp_data[6], temp_data[7], temp_data[8], 
+    temp_data[9], temp_data[10], temp_data[11], temp_data[12], temp_data[13], temp_data[14], temp_data[15]);
+    reg_rd_ip6(SUB6R, temp_data);
+    DBG("SUB6R [%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X] \r\n", temp_data[0], temp_data[1], 
+    temp_data[2], temp_data[3], temp_data[4], temp_data[5], temp_data[6], temp_data[7], temp_data[8], 
+    temp_data[9], temp_data[10], temp_data[11], temp_data[12], temp_data[13], temp_data[14], temp_data[15]);
+    reg_rd_ip6(GA6R, temp_data);
+    DBG("GA6R [%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X:%2X%2X] \r\n", temp_data[0], temp_data[1], 
+    temp_data[2], temp_data[3], temp_data[4], temp_data[5], temp_data[6], temp_data[7], temp_data[8], 
+    temp_data[9], temp_data[10], temp_data[11], temp_data[12], temp_data[13], temp_data[14], temp_data[15]);
+    return true;
+}
 bool WIZnet_Chip::setProtocolMode(int socket, ProtocolMode p)
 {
     if (socket < 0) {
         return false;
     }
     sreg<uint8_t>(socket, Sn_MR, p);
+    sreg<uint8_t>(socket, Sn_MR2, 0x01);
+    DBG("socket[%d] Sn_MR[%2X]\r\n", socket, sreg<uint8_t>(socket, Sn_MR));
+    DBG("socket[%d] Sn_MR2[%2X]\r\n", socket, sreg<uint8_t>(socket, Sn_MR2));
     return true;
 }
 
@@ -90,7 +151,7 @@ bool WIZnet_Chip::setLocalPort(int socket, uint16_t port)
     if (socket < 0) {
         return false;
     }
-    sreg<uint16_t>(socket, Sn_PORT, port);
+    sreg<uint16_t>(socket, Sn_PORTR, port);
     return true;
 }
 
@@ -99,11 +160,11 @@ bool WIZnet_Chip::connect(int socket, const char * host, int port, int timeout_m
     if (socket < 0) {
         return false;
     }
-    sreg<uint8_t>(socket, Sn_MR, TCP);
+    sreg<uint8_t>(socket, Sn_MR, TCP4);
     scmd(socket, OPEN);
     sreg_ip(socket, Sn_DIPR, host);
     sreg<uint16_t>(socket, Sn_DPORT, port);
-    sreg<uint16_t>(socket, Sn_PORT, new_port());
+    sreg<uint16_t>(socket, Sn_PORTR, new_port());
     scmd(socket, CONNECT);
     Timer t;
     t.reset();
@@ -135,8 +196,9 @@ bool WIZnet_Chip::gethostbyname(const char* host, uint32_t* ip)
     return false;
 }
 
-bool WIZnet_Chip::disconnect()
+bool WIZnet_Chip::disconnect(int socket)
 {
+    scmd(socket, DISCON);
     return true;
 }
 
@@ -149,6 +211,11 @@ bool WIZnet_Chip::is_connected(int socket)
         return true;
     }
     return false;
+}
+// socket status return
+uint8_t WIZnet_Chip::socket_status(int socket)
+{
+    return sreg<uint8_t>(socket, Sn_SR);
 }
 
 // Reset the chip & set the buffer
@@ -167,14 +234,26 @@ void WIZnet_Chip::reset()
     
     // set RX and TX buffer size
     for (int socket = 0; socket < MAX_SOCK_NUM; socket++) {
-        sreg<uint8_t>(socket, Sn_RXBUF_SIZE, 2);
-        sreg<uint8_t>(socket, Sn_TXBUF_SIZE, 2);
+        sreg<uint8_t>(socket, Sn_RX_BSR, 2);
+        sreg<uint8_t>(socket, Sn_TX_BSR, 2);
     }
-    
+    DBG("Set RX/TX Buffer Size. \r\n");
     reg_rd_mac(SHAR, mac); // read the MAC address inside the module
 }
 
+bool WIZnet_Chip::open(int socket, int proto)
+{
+    if (socket < 0) {
+        return false;
+    }
+    if (sreg<uint8_t>(socket, Sn_SR) != WIZ_SOCK_CLOSED)
+        return false;
 
+    sreg<uint8_t>(socket, Sn_MR, proto + 1);
+    scmd(socket, OPEN);
+    sreg<uint16_t>(socket, Sn_PORTR, new_port());
+    return true;
+}
 bool WIZnet_Chip::close(int socket)
 {
     if (socket < 0) {
@@ -184,7 +263,7 @@ bool WIZnet_Chip::close(int socket)
     if (sreg<uint8_t>(socket, Sn_SR) == WIZ_SOCK_CLOSED) {
         return true;
     }
-    if (sreg<uint8_t>(socket, Sn_MR) == TCP) {
+    if (sreg<uint8_t>(socket, Sn_MR) == TCP4) {
         scmd(socket, DISCON);
     }
     scmd(socket, CLOSE);
@@ -212,6 +291,9 @@ int WIZnet_Chip::wait_readable(int socket, int wait_time_ms, int req_size)
     while(1) {
         //int size = sreg<uint16_t>(socket, Sn_RX_RSR);
         int size1, size2;
+        if (!is_connected(socket)) {
+            return NSAPI_ERROR_NO_CONNECTION;
+        }
         // during the reading Sn_RX_RSR, it has the possible change of this register.
         // so read twice and get same value then use size information.
         while (1) {
@@ -225,14 +307,10 @@ int WIZnet_Chip::wait_readable(int socket, int wait_time_ms, int req_size)
             if (wait_time_ms != (-1) && t.read_ms() > wait_time_ms) {
                return -1;
             }
-            
-            if (!is_connected(socket)) {
-            return NSAPI_ERROR_NO_CONNECTION;
-            }
         }
-        
         if ((size1 > req_size) || (wait_time_ms != (-1) && t.read_ms() > wait_time_ms)) 
         {
+            //DBG("size %X : %X \n", size1, size2);
             return size1;
         }
     }
@@ -247,28 +325,34 @@ int WIZnet_Chip::wait_writeable(int socket, int wait_time_ms, int req_size)
     Timer t;
     t.reset();
     t.start();
-    t.start();
+    //t.start();
         
     while(1) {
         //int size = sreg<uint16_t>(socket, Sn_TX_FSR);
         int size1, size2;
+        if (!is_connected(socket)) {
+            return NSAPI_ERROR_NO_CONNECTION;
+        }
         // during the reading Sn_TX_FSR, it has the possible change of this register.
         // so read twice and get same value then use size information.
-        do {
+        while(1)
+        {
             size1 = sreg<uint16_t>(socket, Sn_TX_FSR);
             size2 = sreg<uint16_t>(socket, Sn_TX_FSR);
+            if(size1 == size2)
+                break;
+
             DBG("The time taken was %d %d %f seconds\n", wait_time_ms, t.read_ms(), t.read());
             
             if (wait_time_ms != (-1) && t.read_ms() > wait_time_ms) {
                 
                 return NSAPI_ERROR_WOULD_BLOCK;
             }        
-        } while (size1 != size2);
-        if (size1 > req_size) {
+        } 
+        if ((size1 > req_size) || (wait_time_ms != (-1) && t.read_ms() > wait_time_ms)) 
+        {
+            //DBG("size %X : %X \n", size1, size2);
             return size1;
-        }
-        if (wait_time_ms != (-1) && t.read_ms() > wait_time_ms) {
-            break;
         }
     }
     return NSAPI_ERROR_WOULD_BLOCK;

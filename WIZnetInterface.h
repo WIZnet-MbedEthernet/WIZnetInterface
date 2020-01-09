@@ -35,6 +35,8 @@ struct wiznet_socket {
    int   fd;
    nsapi_protocol_t proto;
    bool  connected;
+   bool  server;
+   ProtocolMode Protocol_Mode;
    void  (*callback)(void *);
    void  *callback_data;
 }; 
@@ -51,12 +53,13 @@ public:
     //W5500Interface(SPI* spi, PinName cs, PinName reset);
     WIZnetInterface(PinName mosi, PinName miso, PinName sclk, PinName cs, PinName reset);
 #endif
-
     int init();
     int init(uint8_t * mac);
     int init(const char* ip, const char* mask, const char* gateway);
     int init(uint8_t * mac, const char* ip, const char* mask, const char* gateway);
  
+    bool init_ipv6(const char *lla, const char *gua, const char *sn6, const char *gw6);
+    bool set_dns6(uint8_t *dns6);
     /** Start the interface
      *  @return             0 on success, negative on failure
      */
@@ -93,10 +96,10 @@ public:
      *  @return             MAC address of the interface
      */
     virtual const char *get_mac_address();
-    
 
-	bool setDnsServerIP(const char* ip_address);
+    bool setDnsServerIP(const char* ip_address);
 
+    bool setMode(ProtocolMode mode);
     /** Translates a hostname to an IP address with specific version
      *
      *  The hostname may be either a domain name or an IP address. If the
@@ -297,7 +300,8 @@ private:
     char gateway_string[20];
     char mac_string[20];
     bool ip_set;    
-    
+    ProtocolMode temp_WizMode;
+
     int listen_port;
     
     //void signal_event(nsapi_socket_t handle);

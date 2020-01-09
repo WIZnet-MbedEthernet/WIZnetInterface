@@ -1,5 +1,3 @@
-// modified 08/08/2018 by Bongjun Hur
-
 #pragma once
 
 #include "mbed.h"
@@ -14,9 +12,16 @@
 #define DEFAULT_WAIT_RESP_TIMEOUT 500
 
 enum ProtocolMode {
-    CLOSED = 0,
-    TCP    = 1,
-    UDP    = 2,
+    CLOSED  = 0,
+    TCP4    = 1,
+    UDP4    = 2,
+    IPRAW4  = 3,
+    MACRAW  = 7,
+    TCP6    = 9,
+    UCP6    = 10,
+    IPRAW6  = 11,
+    TCPD    = 13,
+    UDPD    = 14
 };
 
 enum Command {
@@ -52,33 +57,117 @@ enum Status {
 
 #define MAX_SOCK_NUM 8
 
-#define MR        0x0000
-#define GAR       0x0001
-#define SUBR      0x0005
-#define SHAR      0x0009
-#define SIPR      0x000f
-#define SIR       0x0017
-#define SIMR      0x0018
-#define PHYSTATUS 0x0035
+//W6100 Common Register
+#define CIDR          0x0000
+#define VER           0x0002
+#define SYSR          0x2000
+#define SYCR          0x2004
+#define TCNTR         0x2016
+#define TCNTCLR       0x2020
+#define IR            0x2100
+#define SIR           0x2101
+#define SLIR          0x2102
+#define IMR           0x2104
+#define IRCLR         0x2108
+#define SIMR          0x2114
+#define SLIMR         0x2124
+#define SLIRCLR       0x2128
+#define SLPSR         0x212C
+#define SLCR          0x2130
+#define PHYSR         0x3000
+#define PHYRAR        0x3008
+#define PHYDIR        0x300C
+#define PHYDOR        0x3010
+#define PHYACR        0x3014
+#define PHYDIVR       0x3018
+#define PHYCR         0x301C
+#define NET4MR        0x4000
+#define NET6MR        0x4004
+#define NETMR         0x4008
+#define NETMR2        0x4009
+#define PTMR          0x4100
+#define PMNR          0x4104
+#define PHAR          0x4108
+#define PSIDR         0x4110
+#define PMRUR         0x4114
+#define SHAR          0x4120
+#define GAR           0x4130
+#define SUBR          0x4134
+#define SIPR          0x4138
+#define LLAR          0x4140
+#define GUAR          0x4150
+#define SUB6R         0x4160
+#define GA6R          0x4170
+#define SLDIP6R       0x4180
+#define SLDIR         0x418C
+#define SLDHAR        0x4190
+#define PINGIDR       0x4198
+#define PINGSEQR      0x419C
+#define UIPR          0x41A0
+#define UPORTR        0x41A4
+#define UIP6R         0x41B0
+#define UPORT6R       0x41C0
+#define INTPTMR       0x41C5
+#define PLR           0x41D0
+#define PFR           0x41D4
+#define VLTR          0x41D8
+#define PLTR          0x41DC
+#define PAR           0x41E0
+#define ICMP6BLKR     0x41F0
+#define CHPLCKR       0x41F4
+#define NETLCKR       0x41F5
+#define PHYLCKR       0x41F6
+#define RTR           0x4200
+#define RCR           0x4204
+#define SLRTR         0x4208
+#define SLRCR         0x420c
+#define SLHOPR        0x420F
 
-// W5500 socket register
+//W6100 Socket Register
 #define Sn_MR         0x0000
-#define Sn_CR         0x0001
-#define Sn_IR         0x0002
-#define Sn_SR         0x0003
-#define Sn_PORT       0x0004
-#define Sn_DIPR       0x000c
-#define Sn_DPORT      0x0010
-#define Sn_RXBUF_SIZE 0x001e
-#define Sn_TXBUF_SIZE 0x001f
-#define Sn_TX_FSR     0x0020
-#define Sn_TX_WR      0x0024
-#define Sn_RX_RSR     0x0026
-#define Sn_RX_RD      0x0028
-#define Sn_IMR        0x002C
+#define Sn_PSP        0x0004
+#define Sn_CR         0x0010
+#define Sn_IR         0x0020
+#define Sn_IMR        0x0024
+#define Sn_IRCLR      0x0028
+#define Sn_SR         0x0030
+#define Sn_ESR        0x0031
+#define Sn_PNR        0x0100
+#define Sn_TOSR       0x0104
+#define Sn_TTLR       0x0108
+#define Sn_FRGR       0x010C
+#define Sn_MSSR       0x0110
+#define Sn_PORTR      0x0114
+#define Sn_DHAR       0x0118
+#define Sn_DIPR       0x0120
+#define Sn_DIP6R      0x0130
+//#define Sn_DPORTR     0x0140
+#define Sn_DPORT     0x0140
+#define Sn_MR2        0x0144
+#define Sn_RTR        0x0180
+#define Sn_RCR        0x0184
+#define Sn_KPALVTR    0x0188
+#define Sn_TX_BSR     0x0200
+#define Sn_TX_FSR     0x0204
+#define Sn_TX_RD      0x0208
+#define Sn_TX_WR      0x020C
+#define Sn_RX_BSR     0x0220
+#define Sn_RX_RSR     0x0224
+#define Sn_RX_RD      0x0228
+#define Sn_RX_WR      0x022C
 
+//define protocol
+#define Sn_MR_TCP            (0x01)
+#define Sn_MR_UDP            (0x02)
+#define Sn_MR_IPRAW          (0x03)
+#define Sn_MR_MACRAW         (0x07)
+#define Sn_MR_TCP6           (0x09)
+#define Sn_MR_UDP6           (0x0A)
+#define Sn_MR_IPRAW6         (0x0B)
+#define Sn_MR_TCPD           (0x0D)
+#define Sn_MR_UDPD           (0x0E)
 
-
+//to do modify w6100 version
 class WIZnet_Chip {
 public:
     /*
@@ -94,6 +183,13 @@ public:
     virtual ~WIZnet_Chip();
 
     /*
+    * check link set interrupt mask check version
+    *
+    * @return true if connected, false otherwise
+    */ 
+    bool init_chip();
+
+    /*
     * Set MAC Address to W5500
     *
     * @return true if connected, false otherwise
@@ -107,12 +203,13 @@ public:
     */ 
     bool setip();
 
+    bool setip6();
     /*
     * Disconnect the connection
     *
     * @ returns true 
     */
-    bool disconnect();
+    bool disconnect(int socket);
 
     /*
     * Open a tcp connection with the specified host on the specified port
@@ -124,9 +221,9 @@ public:
     bool connect(int socket, const char * host, int port, int timeout_ms = 10*1000);
 
     /*
-    * Set the protocol (UDP or TCP)
-    *
-    * @param p protocol
+    * Set the mode (UDP or TCP)
+    * //to do modify script
+    * @param p WizMode
     * @ returns true if successful
     */
     bool setProtocolMode(int socket, ProtocolMode p);
@@ -139,7 +236,7 @@ public:
 	bool setLocalPort(int socket, uint16_t port);
 
     /*
-    * Reset the W5500
+    * Reset the W6100
     */
     void reset();
    
@@ -153,6 +250,13 @@ public:
     * @returns true if successful
     */
     bool is_connected(int socket);
+
+    /*
+    * Open a socket
+    *
+    * @ returns true if successful
+    */
+    bool open(int socket, int proto);
 
     /*
     * Close a tcp connection
@@ -169,6 +273,13 @@ public:
     * @ returns true if socket is closed.
     */
     bool is_closed(int socket);
+
+    /*
+    * Check status of socket.
+    *
+    * @ returns 1byte socket status.
+    */
+    uint8_t socket_status(int socket);
 
     /*
     * @param str string to be sent
@@ -259,6 +370,14 @@ public:
         spi_write(addr, cb, buf, sizeof(buf));
     }
 
+    void reg_wr_ip6(uint16_t addr, const uint8_t *data)
+    {
+        spi_write(addr, 0x04, data, 16);
+    }
+    void reg_rd_ip6(uint16_t addr, uint8_t* data) {
+        spi_read(addr, 0x00, data, 16);
+    }
+
     void sreg_ip(int socket, uint16_t addr, const char* ip) {
         reg_wr_ip(addr, (0x0C + (socket << 5)), ip);
     }
@@ -269,6 +388,11 @@ public:
     uint32_t gateway;
     uint32_t dnsaddr;
     bool dhcp;
+    uint8_t     lla[16];   ///< Source Link Local Address
+    uint8_t     gua[16];   ///< Source Global Unicast Address
+    uint8_t     sn6[16];   ///< IPv6 Prefix
+    uint8_t     gw6[16];   ///< Gateway IPv6 Address
+    uint8_t     dns6[16];  ///< DNS server IPv6 Address
 
 protected:
     static WIZnet_Chip* inst;

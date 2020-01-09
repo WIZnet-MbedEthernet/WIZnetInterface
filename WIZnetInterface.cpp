@@ -19,7 +19,7 @@
 
 #include "mbed.h"
 #include "WIZnetInterface.h"
-
+#include "ip6string.h"
 
 static uint8_t WIZNET_DEFAULT_TESTMAC[6] = {0x00, 0x08, 0xdc, 0x19, 0x85, 0xa8};
 //static int udp_local_port = 0;
@@ -174,6 +174,10 @@ int WIZnetInterface::init(uint8_t * mac, const char* ip, const char* mask, const
     _wiznet.gateway = str_to_ip(gateway);
     _wiznet.reset();
 
+    #ifdef USE_W6100
+    _wiznet.init_chip();
+    #endif
+
     // @Jul. 8. 2014 add code. should be called to write chip.
     _wiznet.setmac();
     _wiznet.setip();
@@ -182,7 +186,35 @@ int WIZnetInterface::init(uint8_t * mac, const char* ip, const char* mask, const
     return 0;
 }
 
-
+#ifdef USE_W6100
+bool WIZnetInterface::init_ipv6(const char *lla, const char *gua, const char *sn6, const char *gw6)
+{
+    //to do
+    if(stoip6(lla, strlen(lla), _wiznet.lla) == false)
+    {
+        DBG("[Error] lla trans data error \n");
+    }
+    if(stoip6(gua, strlen(gua), _wiznet.gua) == false)
+    {
+        DBG("[Error] gua trans data error \n");
+    }
+    if(stoip6(sn6, strlen(sn6), _wiznet.sn6) == false)
+    {
+        DBG("[Error] sn6 trans data error \n");
+    }
+    if(stoip6(gw6, strlen(gw6), _wiznet.gw6) == false)
+    {
+        DBG("[Error] gw6 trans data error \n");
+    }
+    _wiznet.setip6();
+    return true;
+}
+bool WIZnetInterface::set_dns6(uint8_t *dns6)
+{
+    //to do
+    return true;
+}
+#endif
 void WIZnetInterface::socket_check_read()
 {
     while (1) {
@@ -246,6 +278,13 @@ bool WIZnetInterface::setDnsServerIP(const char* ip_address)
     return dns.set_server(ip_address);
 }
 
+bool WIZnetInterface::setMode(ProtocolMode mode)
+{
+    temp_WizMode = mode;
+    DBG("Protocol Mode: %d \n", temp_WizMode);
+    return true;
+}
+
 int WIZnetInterface::disconnect()
 {
     _wiznet.disconnect();
@@ -302,14 +341,25 @@ nsapi_error_t WIZnetInterface::socket_open(nsapi_socket_t *handle, nsapi_protoco
 
     h->proto         = proto;
     h->connected     = false;
+    h->server        = false;
     h->callback      = NULL;
     h->callback_data = NULL;
 
     //new up an int to store the socket fd
+    h->Protocol_Mode = (ProtocolMode)(proto + 1);
+
+    #ifdef USE_W6100
+    if(temp_WizMode != 0)
+    {
+        h->Protocol_Mode = temp_WizMode;
+        temp_WizMode = CLOSED;
+    }
+    #endif
     *handle = h;
     temp_port = _wiznet.new_port();
+    DBG("Protocol Mode : %d , %d \n", SKT(*handle)->Protocol_Mode, temp_WizMode);
     _wiznet.setLocalPort(SKT(*handle)->fd, temp_port);
-    _wiznet.setProtocol(SKT(*handle)->fd, (Protocol)(proto + 1));
+    _wiznet.setProtocolMode(SKT(*handle)->fd, SKT(*handle)->Protocol_Mode);
     while(_wiznet.is_closed(SKT(*handle)->fd) == true)
     {
         _wiznet.scmd(SKT(*handle)->fd, OPEN);
@@ -350,6 +400,7 @@ nsapi_error_t WIZnetInterface::socket_bind(nsapi_socket_t handle, const SocketAd
     {
         _wiznet.close(SKT(handle)->fd); 
     }
+    
     switch (SKT(handle)->proto) {
         case NSAPI_UDP:
             // set local port
@@ -360,8 +411,9 @@ nsapi_error_t WIZnetInterface::socket_bind(nsapi_socket_t handle, const SocketAd
                 _wiznet.setLocalPort( SKT(handle)->fd, _wiznet.new_port() );
             }
             // set udp protocol
-            _wiznet.setProtocol(SKT(handle)->fd, UDP);
+            _wiznet.setProtocolMode(SKT(handle)->fd, SKT(handle)->Protocol_Mode);
             _wiznet.scmd(SKT(handle)->fd, OPEN);
+            SKT(handle)->connected = true;
             /*
                         uint8_t tmpSn_SR;
                 		tmpSn_SR = _w5500.sreg<uint8_t>(SKT(handle)->fd, Sn_SR);
@@ -371,7 +423,7 @@ nsapi_error_t WIZnetInterface::socket_bind(nsapi_socket_t handle, const SocketAd
         case NSAPI_TCP:
             listen_port = address.get_port();
             // set TCP protocol
-            _wiznet.setProtocol(SKT(handle)->fd, TCP);
+            _wiznet.setProtocolMode(SKT(handle)->fd, SKT(handle)->Protocol_Mode);
             // set local port
             _wiznet.setLocalPort( SKT(handle)->fd, address.get_port() );
             // connect the network
@@ -392,6 +444,7 @@ nsapi_error_t WIZnetInterface::socket_listen(nsapi_socket_t handle, int backlog)
             return NSAPI_ERROR_NO_SOCKET;
         }
     */
+    SKT(handle)->server = true;
     _mutex.lock();
     _wiznet.scmd(SKT(handle)->fd, LISTEN);
     _mutex.unlock();
@@ -539,18 +592,82 @@ nsapi_size_or_error_t WIZnetInterface::socket_recv(nsapi_socket_t handle, void *
     //int idx;
     int _size;
     nsapi_size_or_error_t retsize;
+    uint8_t socket_status;
 
-    DBG("fd: %d\n", SKT(handle)->fd);
+    #ifdef USE_W6100 
+    DBG("fd: %d port: %d\n", SKT(handle)->fd, _wiznet.sreg<uint16_t>(SKT(handle)->fd, Sn_PORTR));
+    #endif
     //INFO("fd: %d\n", SKT(handle)->fd);
     // add to cover exception.
     _mutex.lock();
+
+    if(SKT(handle)->connected == false)
+    {
+        SKT(handle)->connected = true;
+    }
+    #if 0//#ifdef USE_W6100
+    bool temp_server = SKT(handle)->server;
+    uint16_t temp_port;
+    switch(_wiznet.socket_status(SKT(handle)->fd))
+    {
+        case WIZ_SOCK_CLOSED :
+        break;
+        case WIZ_SOCK_INIT:
+            if(SKT(handle)->server == true)
+            {
+                _mutex.lock();
+                _wiznet.scmd(SKT(handle)->fd, LISTEN);
+                _mutex.unlock();
+            }
+        break;
+        case WIZ_SOCK_LISTEN:
+        break;
+        case WIZ_SOCK_SYNSENT:
+        break;
+        case WIZ_SOCK_ESTABLISHED:
+            if(SKT(handle)->connected == false)
+            {
+                SKT(handle)->connected = true;
+            }
+        break;
+        case WIZ_SOCK_CLOSE_WAIT:
+        _wiznet.disconnect(SKT(handle)->fd);
+        /*
+            temp_port = _wiznet.sreg<uint16_t>(SKT(handle)->fd, Sn_PORTR);
+            DBG("fd: port %d \n", temp_port);
+            _wiznet.close(SKT(handle)->fd);
+            _wiznet.setLocalPort(SKT(handle)->fd, temp_port);
+            _wiznet.setProtocol(SKT(handle)->fd, (Protocol)(SKT(handle)->proto + 1));
+            _wiznet.scmd(SKT(handle)->fd, OPEN);
+            DBG("fd: server %d || socket status [%X]\n", SKT(handle)->server, _wiznet.socket_status(SKT(handle)->fd));
+            if(temp_server == true)
+            {
+                SKT(handle)->server = true;
+                _mutex.lock();
+                _wiznet.scmd(SKT(handle)->fd, LISTEN);
+                _mutex.unlock();
+            }
+            */
+        break;
+        default :
+        break;
+    }
+    #endif
+    #ifdef USE_W6100
+    socket_status = _wiznet.socket_status(SKT(handle)->fd);
+    DBG("fd: connected is %d || socket status [%X]\n", SKT(handle)->connected, socket_status);
+    #endif
+
     if ((SKT(handle)->fd < 0) || !SKT(handle)->connected) {
         _mutex.unlock();
         return NSAPI_ERROR_NO_CONNECTION;
     }
-
-    DBG("fd: connected is %d\n", SKT(handle)->connected);
-
+    else if(socket_status == 0x1c)
+    {
+        _mutex.unlock();
+        return NSAPI_ERROR_CONNECTION_LOST;
+    }
+ 
      while(1) {
         _size = _wiznet.wait_readable(SKT(handle)->fd, WIZNET_WAIT_TIMEOUT);
         DBG("fd: _size %d recved_size %d\n", _size, recved_size);
@@ -569,22 +686,15 @@ nsapi_size_or_error_t WIZnetInterface::socket_recv(nsapi_socket_t handle, void *
         {
             _size = size;
         }
+
         retsize = _wiznet.recv(SKT(handle)->fd, (char*)((uint32_t *)data + recved_size), (int)_size);
-//	    printf("[TEST 400] : %d\r\n",recved_size);
-//	    for(idx=0; idx<16; idx++)
-//	    {
-//	        printf(" %02x",((uint8_t*)data)[idx+recved_size]);
-//	    }
-//	    printf("\r\n");
 
         DBG("rv: %d\n", retsize);
-        //INFO("rv: %d\n",err);
         recved_size += _size;
 
-        if(recved_size >= size)
+        //if(recved_size >= size)
             break;
     }
-
 #if WIZNET_INTF_DBG
     if (retsize > 0) {
         debug("[socket_recv] buffer:");
@@ -670,6 +780,45 @@ nsapi_size_or_error_t WIZnetInterface::socket_recvfrom(nsapi_socket_t handle, So
         return NSAPI_ERROR_WOULD_BLOCK;
     }
 
+    
+    #ifdef USE_W6100
+    uint8_t Temp_Head[2];
+    uint16_t port;
+
+    _wiznet.recv(SKT(handle)->fd, (char*)Temp_Head, sizeof(Temp_Head));
+    DBG("Head : %X%X\n", Temp_Head[0], Temp_Head[1]);
+    nsapi_size_t udp_size = ((Temp_Head[0]&0x07)<<8)|Temp_Head[1];
+
+    if (udp_size > (len-sizeof(info))) {
+        DBG("error: udp_size[%d] > (len[%d]-sizeof(info)[%d])\n", udp_size, len, sizeof(info) );
+        _mutex.unlock();
+        return -1;
+    }
+
+    if(Temp_Head[0]&0x80)
+    {
+        //ipv6
+        uint8_t Temp_info[18];
+        _wiznet.recv(SKT(handle)->fd, (char*)Temp_info, sizeof(Temp_info));
+        //to do next address and port
+    }
+    else
+    {
+        //ipv4
+        char addr[17];
+        uint8_t Temp_info[6];
+        _wiznet.recv(SKT(handle)->fd, (char*)Temp_info, sizeof(Temp_info));
+        snprintf(addr, sizeof(addr), "%d.%d.%d.%d", Temp_info[0], Temp_info[1], Temp_info[2], Temp_info[3]);
+        uint16_t port = Temp_info[4]<<8|Temp_info[5];
+
+        if (address != NULL) {
+        //DBG("[socket_recvfrom] warn: addressis NULL");
+        address->set_ip_address(addr);
+        address->set_port(port);
+        }
+    }
+    
+    #else
     //receive endpoint information
     _wiznet.recv(SKT(handle)->fd, (char*)info, sizeof(info));
 
@@ -690,7 +839,7 @@ nsapi_size_or_error_t WIZnetInterface::socket_recvfrom(nsapi_socket_t handle, So
         _mutex.unlock();
         return -1;
     }
-
+    #endif
     //receive from socket
     nsapi_size_or_error_t err = _wiznet.recv(SKT(handle)->fd, (char*)buffer, udp_size);
     DBG("rv: %d\n", err);
