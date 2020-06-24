@@ -228,7 +228,7 @@ void WIZnetInterface::socket_check_read()
             }
             _mutex.unlock();
         }
-        wait_ms(1);
+        thread_sleep_for(1);
     }
 }
 

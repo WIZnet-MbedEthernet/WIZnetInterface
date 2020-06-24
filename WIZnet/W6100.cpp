@@ -223,9 +223,9 @@ void WIZnet_Chip::reset()
 {
 //    reset_pin = 1;
     reset_pin = 0;
-    wait_us(500); // 500us (w5500)
+    thread_sleep_for(1); // 500us (w5500)
     reset_pin = 1;
-    wait_ms(400); // 400ms (w5500)
+    thread_sleep_for(400); // 400ms (w5500)
 
 #if defined(USE_WIZ550IO_MAC)
     //reg_rd_mac(SHAR, mac); // read the MAC address inside the module
@@ -478,7 +478,7 @@ void WIZnet_Chip::spi_read(uint16_t addr, uint8_t cb, uint8_t *buf, uint16_t len
     }
     debug("\r\n");
     if ((addr&0xf0ff)==0x4026 || (addr&0xf0ff)==0x4003) {
-        wait_ms(200);
+        thread_sleep_for(200);
     }
 #endif
     spi->unlock();

@@ -158,7 +158,7 @@ void DNSClient::resolve(const char* hostname) {
 void DNSClient::poll() {
 #if DBG_DNS
     printf("%p m_state: %d, m_udp: %p\n", this, m_state, m_udp);
-    wait_ms(400);
+    thread_sleep_for(400);
 #endif
     switch(m_state) {
         case MYNETDNS_START:

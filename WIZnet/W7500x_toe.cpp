@@ -181,8 +181,8 @@ void WIZnet_Chip::reset()
 {
     /* S/W Reset PHY */
     mdio_write(GPIO_MDC, PHYREG_CONTROL, 0x8000);
-    wait_ms(10);//for S/W reset
-    wait_ms(10);//for MDC I/F RDY
+    thread_sleep_for(10);//for S/W reset
+    thread_sleep_for(10);//for MDC I/F RDY
 
     mdio_init(GPIO_MDC, MDC, MDIO);
     
@@ -513,9 +513,9 @@ void output_MDIO(GPIO_TypeDef* GPIOx, uint32_t val, uint32_t n)
         else
             HAL_GPIO_ResetBits(GPIOx, MDIO);
 
-        wait_ms(MDC_WAIT);
+        thread_sleep_for(MDC_WAIT);
         HAL_GPIO_SetBits(GPIOx, MDC); 
-        wait_ms(MDC_WAIT);
+        thread_sleep_for(MDC_WAIT);
         HAL_GPIO_ResetBits(GPIOx, MDC);
     }
 }
@@ -527,9 +527,9 @@ uint32_t input_MDIO( GPIO_TypeDef* GPIOx )
     {
         val <<=1;
         HAL_GPIO_SetBits(GPIOx, MDC); 
-        wait_ms(MDC_WAIT);
+        thread_sleep_for(MDC_WAIT);
         HAL_GPIO_ResetBits(GPIOx, MDC);
-        wait_ms(MDC_WAIT);
+        thread_sleep_for(MDC_WAIT);
         val |= HAL_GPIO_ReadInputDataBit(GPIOx, MDIO);
     }
     return (val);
@@ -539,18 +539,18 @@ void turnaround_MDIO( GPIO_TypeDef* GPIOx)
 {
     GPIOx->OUTENCLR = MDIO ;
     HAL_GPIO_SetBits(GPIOx, MDC); 
-    wait_ms(MDC_WAIT);
+    thread_sleep_for(MDC_WAIT);
     HAL_GPIO_ResetBits(GPIOx, MDC);
-    wait_ms(MDC_WAIT);
+    thread_sleep_for(MDC_WAIT);
 }
 
 void idle_MDIO( GPIO_TypeDef* GPIOx )
 {
     GPIOx->OUTENSET = MDIO ;
     HAL_GPIO_SetBits(GPIOx,MDC); 
-    wait_ms(MDC_WAIT);
+    thread_sleep_for(MDC_WAIT);
     HAL_GPIO_ResetBits(GPIOx, MDC);
-    wait_ms(MDC_WAIT);
+    thread_sleep_for(MDC_WAIT);
 }
 
 uint32_t mdio_read(GPIO_TypeDef* GPIOx, uint32_t PhyRegAddr)
